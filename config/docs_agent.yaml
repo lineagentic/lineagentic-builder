@@ -1,0 +1,11 @@
+name: "docs"
+template: |
+  # {name}
+
+  **Purpose**: {purpose}
+
+  Artifacts: `data-product.yaml`, `policies/policy-pack.yaml`.
+success_message: "Docs draft prepared. It will be included in PR description. Say `review` to see a summary."
+keywords:
+  - "docs"
+  - "doc"

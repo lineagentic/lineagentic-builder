@@ -1,0 +1,11 @@
+name: "provisioning"
+commands:
+  deploy:
+    pattern: "deploy:"
+    success_template: "Scaffolded spec & policies to repo for env `{env}`. Open a PR to run CI. (Simulated here.)"
+    help_message: "Say `deploy:dev` (or stg/prod) to write specs to the repo and simulate provisioning."
+output_files:
+  data_product: "data-product.yaml"
+  policy_pack: "policies/policy-pack.yaml"
+keywords:
+  - "deploy:"

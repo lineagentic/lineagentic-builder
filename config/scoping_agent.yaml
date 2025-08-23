@@ -1,0 +1,15 @@
+name: "scoping"
+ask_order: ["name", "domain", "owner", "purpose", "upstreams"]
+prompts:
+  name: "What should we call this data product? (use kebab_case)"
+  domain: "Which business domain? (e.g., sales, marketing)"
+  owner: "Who is the owner (email or team id)?"
+  purpose: "What is the purpose in one sentence?"
+  upstreams: "List upstream sources (comma-separated), e.g., crm.salesforce, web.events"
+completion_message: "Scope captured. Next, let's define your output interfaces (name, type, sink, schema)."
+keywords:
+  - "name:"
+  - "domain:"
+  - "owner:"
+  - "purpose:"
+  - "upstreams:"

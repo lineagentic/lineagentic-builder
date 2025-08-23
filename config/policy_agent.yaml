@@ -1,0 +1,46 @@
+name: "policy"
+default_policy_structure:
+  access:
+    allow_roles: []
+    deny_roles: []
+    row_level_policies: []
+    column_masks: []
+  quality_gates: []
+  retention:
+    mode: "delete"
+    duration: "365d"
+  evaluation_points: ["design", "ci", "runtime"]
+commands:
+  allow:
+    pattern: "allow:"
+    success_template: "Allowed roles updated: {roles}. Add masks with `mask:column=email,role=*` or quality with `gate:type=not_null,column=customer_id` or `policies:done`."
+  deny:
+    pattern: "deny:"
+    success_template: "Deny roles updated: {roles}."
+  mask:
+    pattern: "mask:"
+    success_template: "Masking added for `{column}`."
+    masking_template: "CASE WHEN is_member('role:privacy-cleared') THEN {column} ELSE sha2({column},256) END"
+    default_role: "*"
+  gate:
+    pattern: "gate:"
+    success_template: "Quality gate added: {gate}."
+    name_template: "{type}_{column}"
+    default_type: "not_null"
+  retention:
+    pattern: "retention:"
+    success_template: "Retention updated: {retention}."
+    default_values:
+      mode: "delete"
+      duration: "365d"
+  policies_done:
+    pattern: "policies:done"
+    message: "Policies captured. Say `deploy:dev` to scaffold infra & CI locally (simulated) and render YAML."
+help_message: "Add policy with `allow:role1,role2`, `deny:role3`, `mask:column=email,role=*`, `gate:type=not_null,column=customer_id`, `retention:mode=delete,duration=365d` or `policies:done`."
+keywords:
+  - "allow:"
+  - "deny:"
+  - "mask:"
+  - "gate:"
+  - "retention:"
+  - "policies:done"

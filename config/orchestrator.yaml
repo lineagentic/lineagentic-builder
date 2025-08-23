@@ -1,0 +1,18 @@
+routing_rules:
+  - keywords: ["name:", "domain:", "owner:", "purpose:", "upstreams:"]
+    agent: "scoping"
+  - keywords: ["output:", "field:", "fields:done", "sla:"]
+    agent: "schema_contract"
+  - keywords: ["allow:", "deny:", "mask:", "gate:", "retention:", "policies:done"]
+    agent: "policy"
+  - keywords: ["deploy:"]
+    agent: "provisioning"
+  - keywords: ["docs", "doc"]
+    agent: "docs"
+  - keywords: ["catalog"]
+    agent: "catalog"
+  - keywords: ["observ"]
+    agent: "observability"
+default_routing:
+  incomplete_spec: "scoping"
+  complete_spec: "schema_contract"

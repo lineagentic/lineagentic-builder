@@ -1,0 +1,4 @@
+name: "catalog"
+success_message: "Catalog registration would run in CI after merge (stubbed)."
+keywords:
+  - "catalog"

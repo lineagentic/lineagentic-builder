@@ -1,0 +1,32 @@
+name: "schema_contract"
+commands:
+  output:
+    pattern: "output:"
+    help: "Define an output with `output:name=...,type=table, sink=catalog.schema.table, freshness=15m`."
+    success_template: "Added output `{name}`. Now add fields with `field:name=...,type=...,pii=true/false,pk=true/false` (repeat). Finish with `fields:done`."
+    default_values:
+      name: "output1"
+      type: "table"
+      sink: ""
+      freshness: ""
+  field:
+    pattern: "field:"
+    help: "Add fields with `field:name=...,type=...,pii=true/false,pk=true/false` (repeat). Finish with `fields:done`."
+    success_template: "✅ Added field `{name}`. Add more `field:` entries or `fields:done`."
+    default_values:
+      name: "col"
+      type: "string"
+      pii: "false"
+      pk: "false"
+    auto_classification: "personal"
+  fields_done:
+    pattern: "fields:done"
+    message: "Schema captured. Provide SLA like `sla:availability=99.9%,latency=10m` or proceed to policies."
+  sla:
+    pattern: "sla:"
+    message: "SLA recorded. Proceed to policies with `allow:role1,role2`, `mask:column=col,role=*` or say `policies:done`."
+keywords:
+  - "output:"
+  - "field:"
+  - "fields:done"
+  - "sla:"

@@ -1,0 +1,8 @@
+name: "observability"
+template: "Observability stub — would track freshness {latency} and availability {availability}."
+default_values:
+  latency: "N/A"
+  availability: "N/A"
+keywords:
+  - "observ"
+  - "observability"
