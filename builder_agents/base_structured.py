@@ -156,6 +156,63 @@ class BaseStructuredAgent(ABC):
             logger.warning(f"Missing template key {e} in template: {template}")
             return template
     
+    def get_example_for_field(self, field_name: str) -> str:
+        """
+        Get an example for a specific field from the config.
+        
+        Args:
+            field_name: Name of the field to get example for
+            
+        Returns:
+            Example string for the field
+        """
+        prompts = self.get_config_dict("prompts", {})
+        if field_name in prompts:
+            prompt = prompts[field_name]
+            # Extract example from prompt (after "Example:")
+            if "Example:" in prompt:
+                example_part = prompt.split("Example:")[1].strip()
+                return example_part
+        return ""
+    
+    def get_next_field_example(self, current_field: str) -> str:
+        """
+        Get the next field in ask_order and its example.
+        
+        Args:
+            current_field: Current field being processed
+            
+        Returns:
+            Example for the next field
+        """
+        ask_order = self.get_config_list("ask_order", [])
+        try:
+            current_index = ask_order.index(current_field)
+            if current_index + 1 < len(ask_order):
+                next_field = ask_order[current_index + 1]
+                return self.get_example_for_field(next_field)
+        except ValueError:
+            pass
+        return ""
+    
+    def enhance_reply_with_example(self, reply: str, field_name: str = None) -> str:
+        """
+        Enhance a reply with relevant examples.
+        
+        Args:
+            reply: Original reply message
+            field_name: Current field being processed
+            
+        Returns:
+            Enhanced reply with examples
+        """
+        if field_name:
+            example = self.get_example_for_field(field_name)
+            if example:
+                return f"{reply}\n\nExample: {example}"
+        
+        return reply
+    
     @abstractmethod
     def get_input_model(self) -> Type[BaseModel]:
         """Return the Pydantic model for input validation."""
@@ -212,6 +269,9 @@ class BaseStructuredAgent(ABC):
             system_prompt = self.get_system_prompt()
             logger.debug(f"{self.name} agent system prompt length: {len(system_prompt)}")
             
+            # Build conversation context including history
+            conversation_context = self._build_conversation_context(state)
+            
             # Call OpenAI with structured output
             logger.info(f"{self.name} agent calling OpenAI API...")
             # Use run_in_executor to make the sync call async
@@ -223,7 +283,7 @@ class BaseStructuredAgent(ABC):
                     model="gpt-4-turbo-preview",  # or use config
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": str(validated_input)}
+                        {"role": "user", "content": f"Conversation Context:\n{conversation_context}\n\nCurrent Message: {validated_input}"}
                     ],
                     response_format={"type": "json_object"},
                     temperature=0.1
@@ -250,7 +310,7 @@ class BaseStructuredAgent(ABC):
             return result
             
         except Exception as e:
-            logger.error(f"Error in structured agent {self.name}: {e}")
+            logger.error(f"{self.name} agent error: {e}")
             # Fallback to simple response
             return {
                 "reply": f"I encountered an error processing your request: {str(e)}",
@@ -258,6 +318,40 @@ class BaseStructuredAgent(ABC):
                 "next_action": "help",
                 "metadata": {"error": str(e)}
             }
+    
+    def _build_conversation_context(self, state: Dict[str, Any]) -> str:
+        """Build conversation context including history and current state."""
+        context_parts = []
+        
+        # Add current data product state
+        data_product = state.get("data_product", {})
+        if data_product:
+            context_parts.append("Current Data Product State:")
+            for key, value in data_product.items():
+                if value:  # Only include non-empty values
+                    context_parts.append(f"- {key}: {value}")
+        
+        # Add current policy pack state
+        policy_pack = state.get("policy_pack", {})
+        if policy_pack:
+            context_parts.append("\nCurrent Policy Pack State:")
+            for key, value in policy_pack.items():
+                if value:  # Only include non-empty values
+                    context_parts.append(f"- {key}: {value}")
+        
+        # Add recent conversation history (last 5 exchanges)
+        history = state.get("history", [])
+        if history:
+            context_parts.append("\nRecent Conversation History:")
+            # Get last 10 messages (5 exchanges)
+            recent_history = history[-10:] if len(history) > 10 else history
+            for msg in recent_history:
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+                if content:
+                    context_parts.append(f"- {role}: {content[:100]}...")
+        
+        return "\n".join(context_parts) if context_parts else "No previous context available."
 
 def deep_merge(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
     """Deep merge two dictionaries."""

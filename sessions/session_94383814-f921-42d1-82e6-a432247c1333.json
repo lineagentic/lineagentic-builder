@@ -1,0 +1,64 @@
+{
+  "session_id": "94383814-f921-42d1-82e6-a432247c1333",
+  "created_at": "2025-08-24T18:59:46.274183",
+  "last_updated": "2025-08-24T18:59:46.274210",
+  "state": {
+    "data_product": {
+      "name": "customer_44",
+      "domain": "marketing",
+      "owner": "hh@gg.com",
+      "purpose": "to track monthly sales"
+    },
+    "policy_pack": {},
+    "history": [
+      {
+        "role": "user",
+        "content": "The name of the data product is customer_44."
+      },
+      {
+        "role": "assistant",
+        "content": "Great, we'll call it customer_44. Which business domain does this data product belong to? Example: sales, marketing, finance, operations, customer-service"
+      },
+      {
+        "role": "user",
+        "content": "The business domain for this data product is marketing."
+      },
+      {
+        "role": "assistant",
+        "content": "Got it, the domain is marketing. Who is the owner of this data product? Please provide an email or a team id. Example: jane.doe@company.com or team:marketing-data"
+      },
+      {
+        "role": "user",
+        "content": "The owner of this data product is hh@gg.com."
+      },
+      {
+        "role": "assistant",
+        "content": "Thanks for providing the owner's email. What is the purpose of this data product in one sentence? Example: Track daily customer engagement metrics for marketing optimization."
+      },
+      {
+        "role": "user",
+        "content": "The purpose of this data product is to track monthly sales."
+      },
+      {
+        "role": "assistant",
+        "content": "What are the upstream sources for customer_44? Please list all the data sources it will use, for example: crm.salesforce, web.events, billing.stripe."
+      },
+      {
+        "role": "user",
+        "content": "The upstream sources for customer_44."
+      },
+      {
+        "role": "assistant",
+        "content": "It seems like you're about to list the upstream sources for customer_44, but I didn't catch any specific sources in your message. Could you please specify the data sources it will use? For example, you might use data from 'crm.salesforce', 'web.events', or 'billing.stripe'."
+      },
+      {
+        "role": "user",
+        "content": "The upstream sources for customer_44."
+      },
+      {
+        "role": "assistant",
+        "content": "It looks like we still need to identify the upstream sources for customer_44. Could you please list all the data sources it will use? For example, you might use data from CRM systems, web analytics platforms, or sales databases. Examples include crm.salesforce, web.events, billing.stripe."
+      }
+    ]
+  }
+}

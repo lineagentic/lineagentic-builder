@@ -1,0 +1,19 @@
+{
+  "session_id": "c397bb23-e43a-4007-9cf4-8a60c89f9be3",
+  "created_at": "2025-08-24T19:42:16.540565",
+  "last_updated": "2025-08-24T19:42:16.540571",
+  "state": {
+    "data_product": {},
+    "policy_pack": {},
+    "history": [
+      {
+        "role": "user",
+        "content": "The following represents the data product specifications for customer360: {\"data_product\":{\"name\":\"customer360\",\"domain\":\"sales\",\"owner\":\"john.doe@company.com\",\"purpose\":\"Comprehensive customer data analysis for sales optimization\",\"upstreams\":[\"crm.salesforce\",\"billing.stripe\",\"web.events\"],\"interfaces\":{\"outputs\":[{\"output_name\":\"customer360_table\",\"output_type\":\"table\",\"sink_location\":\"data_warehouse.sales.customer360\",\"freshness\":\"daily\",\"fields\":[{\"name\":\"customer_id\",\"type\":\"string\",\"pk\":true,\"pii\":false,\"required\":true,\"description\":\"Unique customer identifier\"},{\"name\":\"email\",\"type\":\"string\",\"pk\":false,\"pii\":true,\"required\":true,\"description\":\"Customer email address\"},{\"name\":\"name\",\"type\":\"string\",\"pk\":false,\"pii\":true,\"required\":false,\"description\":\"Customer full name\"},{\"name\":\"total_purchases\",\"type\":\"decimal\",\"pk\":false,\"pii\":false,\"required\":false,\"description\":\"Total amount of purchases\"},{\"name\":\"last_purchase_date\",\"type\":\"timestamp\",\"pk\":false,\"pii\":false,\"required\":false,\"description\":\"Date of last purchase\"},{\"name\":\"created_at\",\"type\":\"timestamp\",\"pk\":false,\"pii\":false,\"required\":true,\"description\":\"Record creation timestamp\"}]}]},\"infrastructure\":{\"environment\":\"production\",\"platform\":\"aws\",\"deployment_type\":\"kubernetes\",\"resources\":{\"compute\":{\"cpu\":\"2 cores\",\"memory\":\"4GB RAM\",\"storage\":\"100GB SSD\"},\"scaling\":{\"min_replicas\":2,\"max_replicas\":10,\"auto_scaling\":true}},\"networking\":{\"vpc\":\"vpc-sales-data\",\"subnet\":\"subnet-private-1a\",\"security_groups\":[\"sg-data-processing\",\"sg-database-access\"]},\"monitoring\":{\"logging\":\"cloudwatch\",\"metrics\":\"prometheus\",\"alerting\":\"pagerduty\"}},\"documentation\":{\"doc_type\":\"comprehensive\",\"sections\":[\"Technical Guide\",\"User Guide\",\"API Documentation\",\"Data Dictionary\",\"Runbook\"],\"format\":\"markdown\",\"audience\":[\"developers\",\"data engineers\",\"analysts\",\"end users\",\"operations team\"],\"artifacts\":[\"README.md\",\"technical-guide.md\",\"user-guide.md\",\"api-docs.md\",\"data-dictionary.md\",\"runbook.md\"],\"content_outline\":{\"technical_guide\":{\"title\":\"Customer360 Data Product - Technical Guide\",\"sections\":[\"Architecture Overview\",\"Data Flow\",\"Infrastructure Setup\",\"Deployment Process\",\"Configuration Management\",\"Security Implementation\",\"Performance Optimization\"]},\"user_guide\":{\"title\":\"Customer360 Data Product - User Guide\",\"sections\":[\"Getting Started\",\"Data Access\",\"Query Examples\",\"Best Practices\",\"Troubleshooting\",\"Support Contacts\"]},\"api_documentation\":{\"title\":\"Customer360 Data Product - API Documentation\",\"sections\":[\"Authentication\",\"Endpoints\",\"Request/Response Formats\",\"Rate Limits\",\"Error Codes\",\"Code Examples\"]},\"data_dictionary\":{\"title\":\"Customer360 Data Product - Data Dictionary\",\"sections\":[\"Field Definitions\",\"Data Types\",\"Business Rules\",\"Data Quality Metrics\",\"Change History\"]},\"runbook\":{\"title\":\"Customer360 Data Product - Operations Runbook\",\"sections\":[\"Deployment Procedures\",\"Monitoring Setup\",\"Alert Response\",\"Troubleshooting Steps\",\"Recovery Procedures\",\"Maintenance Tasks\"]}}}}"
+      },
+      {
+        "role": "assistant",
+        "content": "Schema contract captured. Data product schema and SLA requirements are defined."
+      }
+    ]
+  }
+}

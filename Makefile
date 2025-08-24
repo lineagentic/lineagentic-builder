@@ -30,9 +30,19 @@ endif
 
 create-venv:
 	@echo " Creating virtual environment..."
-	@uv sync
-	@echo " Installing package in editable mode..."
-	@uv pip install -e .
+	@if command -v uv >/dev/null 2>&1; then \
+		echo " Using uv for dependency management..."; \
+		uv sync; \
+		uv pip install -e .; \
+	elif command -v python3 >/dev/null 2>&1; then \
+		echo " Using standard Python tools..."; \
+		python3 -m venv .venv; \
+		. .venv/bin/activate && pip install --upgrade pip; \
+		. .venv/bin/activate && pip install -e .; \
+	else \
+		echo " Error: Neither uv nor python3 found. Please install Python 3.8+ or uv."; \
+		exit 1; \
+	fi
 	@echo " Virtual environment created successfully!"
 
 # =============================================================================

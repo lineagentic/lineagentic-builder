@@ -7,6 +7,6 @@ load_dotenv(override=True)
 agentic_mcp_server_params = [
     {
         "command": "python", 
-        "args": ["mcp_agentic_server/agentic_server.py"]
+        "args": ["mcp_server/agentic_server.py"]
     },
 ]

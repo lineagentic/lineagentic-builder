@@ -1,46 +1,21 @@
 name: "policy"
-default_policy_structure:
-  access:
-    allow_roles: []
-    deny_roles: []
-    row_level_policies: []
-    column_masks: []
-  quality_gates: []
-  retention:
-    mode: "delete"
-    duration: "365d"
-  evaluation_points: ["design", "ci", "runtime"]
-commands:
-  allow:
-    pattern: "allow:"
-    success_template: "Allowed roles updated: {roles}. Add masks with `mask:column=email,role=*` or quality with `gate:type=not_null,column=customer_id` or `policies:done`."
-  deny:
-    pattern: "deny:"
-    success_template: "Deny roles updated: {roles}."
-  mask:
-    pattern: "mask:"
-    success_template: "Masking added for `{column}`."
-    masking_template: "CASE WHEN is_member('role:privacy-cleared') THEN {column} ELSE sha2({column},256) END"
-    default_role: "*"
-  gate:
-    pattern: "gate:"
-    success_template: "Quality gate added: {gate}."
-    name_template: "{type}_{column}"
-    default_type: "not_null"
-  retention:
-    pattern: "retention:"
-    success_template: "Retention updated: {retention}."
-    default_values:
-      mode: "delete"
-      duration: "365d"
-  policies_done:
-    pattern: "policies:done"
-    message: "Policies captured. Say `deploy:dev` to scaffold infra & CI locally (simulated) and render YAML."
-help_message: "Add policy with `allow:role1,role2`, `deny:role3`, `mask:column=email,role=*`, `gate:type=not_null,column=customer_id`, `retention:mode=delete,duration=365d` or `policies:done`."
+ask_order: ["access_control", "data_masking", "quality_gates", "retention_policy", "evaluation_points"]
+prompts:
+  access_control: "What access control rules? Example: allow analysts and engineers, deny external users, role-based access"
+  data_masking: "What data masking rules? Example: mask email and phone numbers, hash sensitive data, anonymize user ids"
+  quality_gates: "What quality gates? Example: customer_id not null, email unique, age between 0-120, valid email format"
+  retention_policy: "What retention policy? Example: delete after 365 days, archive after 7 years, keep forever"
+  evaluation_points: "When to evaluate policies? Example: design time, CI/CD pipeline, runtime, data ingestion"
+completion_message: "Policy configuration captured. Data governance policies will be applied to the data product."
+policy_patterns:
+  - "allow/deny roles: role1, role2, role3"
+  - "mask columns: column1, column2 for role1, role2"
+  - "quality gates: column1 not null, column2 unique, column3 pattern"
+  - "retention: delete after X days, archive after Y years"
 keywords:
-  - "allow:"
-  - "deny:"
-  - "mask:"
-  - "gate:"
-  - "retention:"
-  - "policies:done"
+  - "policy"
+  - "policies"
+  - "access"
+  - "masking"
+  - "quality"
+  - "retention"

@@ -9,9 +9,8 @@ from .base_structured import BaseStructuredAgent, Message
 class PolicyInput(BaseModel):
     """Input model for policy agent."""
     message: str = Field(description="The user's message")
-    role: str = Field(description="The role of the message sender")
-    state: Dict[str, Any] = Field(description="Current conversation state")
-    policy_pack: Dict[str, Any] = Field(default_factory=dict, description="Current policy pack")
+    conversation_context: str = Field(description="Current conversation context")
+    current_state: Dict[str, Any] = Field(description="Current conversation state")
 
 class PolicyOutput(BaseModel):
     """Output model for policy agent."""
@@ -19,9 +18,9 @@ class PolicyOutput(BaseModel):
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Confidence level of the response")
     next_action: Optional[str] = Field(default=None, description="Suggested next action for the user")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
-    command_type: Optional[str] = Field(default=None, description="Type of command detected (allow, deny, mask, gate, retention, policies_done)")
     extracted_data: Dict[str, Any] = Field(default_factory=dict, description="Extracted data from the message")
-    policy_updates: Dict[str, Any] = Field(default_factory=dict, description="Policy updates to apply")
+    missing_fields: List[str] = Field(default_factory=list, description="List of missing required fields")
+    parsed_policies: Dict[str, Any] = Field(default_factory=dict, description="Parsed policy definitions")
 
 class PolicyAgentStructured(BaseStructuredAgent):
     name = "policy"
@@ -33,40 +32,88 @@ class PolicyAgentStructured(BaseStructuredAgent):
         return PolicyOutput
     
     def get_system_prompt(self) -> str:
-        commands = self.get_config_dict("commands", {})
-        help_message = self.get_config("help_message", "Add policy with `allow:role1,role2`, `deny:role3`, `mask:column=email,role=*`, `gate:type=not_null,column=customer_id`, `retention:mode=delete,duration=365d` or `policies:done`.")
+        ask_order = self.get_config_list("ask_order", ["access_control", "data_masking", "quality_gates", "retention_policy", "evaluation_points"])
+        prompts = self.get_config_dict("prompts", {})
+        completion_message = self.get_config("completion_message", "Policy configuration captured.")
+        policy_patterns = self.get_config_list("policy_patterns", [])
         
-        prompt = f"""You are a data product policy agent. Your job is to help users define access controls, data masking, quality gates, and retention policies.
+        prompt = f"""You are a data product policy agent. Your job is to help users configure data governance policies for their data product.
 
-Available commands:
-1. allow: Define allowed roles (e.g., "allow:role:marketing-analyst,role:crm-engineer")
-2. deny: Define denied roles (e.g., "deny:role:intern")
-3. mask: Define column masking (e.g., "mask:column=email,role=*")
-4. gate: Define quality gates (e.g., "gate:type=not_null,column=customer_id")
-5. retention: Define retention policies (e.g., "retention:mode=delete,duration=365d")
-6. policies:done: Complete policy definition
+Required fields in order: {ask_order}
 
-Command configurations:
-{chr(10).join([f"- {cmd}: {config.get('success_template', 'No template available')}" for cmd, config in commands.items()])}
+Available prompts:
+{chr(10).join([f"- {field}: {prompts.get(field, f'What is the {field}?')}" for field in ask_order])}
 
-Help message: {help_message}
+Completion message: {completion_message}
+
+Policy parsing patterns:
+{chr(10).join([f"- {pattern}" for pattern in policy_patterns])}
+
+CRITICAL: Always check the conversation context first!
+- Review the current data product state to see what's already captured
+- Check conversation history to understand what's been discussed
+- NEVER ask for information that has already been provided
+- Only ask for missing fields that haven't been captured yet
+
+NATURAL LANGUAGE UNDERSTANDING:
+- Users can say things naturally, not just with explicit keywords
+- "access control" = access_control
+- "who can access" = access_control
+- "permissions" = access_control
+- "data masking" = data_masking
+- "hide sensitive data" = data_masking
+- "quality gates" = quality_gates
+- "data quality" = quality_gates
+- "retention" = retention_policy
+- "how long to keep" = retention_policy
+- "when to check" = evaluation_points
+
+NEGATIVE RESPONSE HANDLING:
+- "no masking required" = data_masking: "none"
+- "no rules" = data_masking: "none"
+- "no masking" = data_masking: "none"
+- "no access control" = access_control: "none"
+- "no quality gates" = quality_gates: "none"
+- "no retention policy" = retention_policy: "none"
+- "yes no masking required" = data_masking: "none"
+- "there is no rule" = data_masking: "none"
+- "i am ok" = data_masking: "none"
 
 Your task:
-1. Detect the command type from the user's message
-2. Extract relevant data from the message
-3. Provide appropriate response based on the command
-4. Suggest next actions
+1. First, analyze the conversation context to understand current progress
+2. Extract any policy configuration information from the user's message
+3. Parse policy definitions from natural language (e.g., "allow analysts and engineers", "mask email and phone")
+4. Identify what policy fields are still missing (only ask for uncaptured fields)
+5. Provide a helpful response guiding the user to the next missing field
+6. If all fields are complete, provide the completion message
+
+When parsing policies, look for patterns like:
+- Access control: "allow role1, role2" or "deny role1, role2"
+- Data masking: "mask column1, column2" or "mask email for role1"
+- Quality gates: "column1 not null", "column2 unique", "column3 pattern"
+- Retention: "delete after X days", "archive after Y years"
+- Negative responses: "no masking required", "no rules", "none needed"
+
+IMPORTANT: Always provide clear examples in your responses to help users understand what you're asking for.
+
+IMPORTANT RULES:
+- If user says "no masking required", extract data_masking: "none"
+- If user says "no rules", extract data_masking: "none"
+- If user says "there is no rule", extract data_masking: "none"
+- If user says "i am ok", extract data_masking: "none"
+- NEVER ask for the same field twice if it's already been provided
+- CHECK THE CURRENT STATE FIRST - if a field is already set, don't ask for it again
 
 Respond with a JSON object containing:
-- reply: Your response message
+- reply: Your response message (include examples when asking for information)
 - confidence: Your confidence level (0.0 to 1.0)
-- next_action: Suggested next action (e.g., "add_mask", "add_gate", "complete")
+- next_action: Suggested next action (e.g., "provide_access_control", "provide_data_masking", "complete")
 - metadata: Any additional information
-- command_type: Type of command detected
-- extracted_data: Any data you extracted from the message
-- policy_updates: Any policy updates to apply
+- extracted_data: Any policy configuration data you extracted from the message
+- missing_fields: List of policy fields that are still missing
+- parsed_policies: Parsed policy objects with access, masking, quality, retention rules
 
-Be helpful and guide the user through the policy definition process."""
+Be helpful and guide the user through the policy configuration process step by step with clear examples, but never repeat questions for information already provided."""
         
         return prompt
     
@@ -76,119 +123,102 @@ Be helpful and guide the user through the policy definition process."""
             "message": message.content,
             "role": message.role,
             "state": state,
-            "policy_pack": state.get("policy_pack", {})
+            "data_product": state.get("data_product", {})
         }
     
-    def handle(self, state: Dict[str, Any], message: Message) -> Dict[str, Any]:
+    async def handle_async(self, state: Dict[str, Any], message: Message) -> Dict[str, Any]:
         """Handle message using OpenAI structured output."""
         try:
-            # Extract structured input
-            input_data = self.extract_structured_input(message, state)
+            # Build conversation context
+            conversation_context = self._build_conversation_context(state)
             
-            # Validate input using Pydantic model
-            input_model = self.get_input_model()
-            validated_input = input_model(**input_data)
+            # Create input for the agent
+            input_data = PolicyInput(
+                message=message.content,
+                conversation_context=conversation_context,
+                current_state=state
+            )
             
             # Get system prompt
             system_prompt = self.get_system_prompt()
             
-            # Call OpenAI with structured output
+            # Call OpenAI with structured output using the base class method
             response = self.client.chat.completions.create(
                 model="gpt-4-turbo-preview",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"User message: {validated_input.message}\nCurrent policy pack: {validated_input.policy_pack}"}
+                    {"role": "user", "content": f"Conversation Context:\n{conversation_context}\n\nCurrent Message: {message.content}"}
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.1
             )
             
-            # Parse and validate response
+            # Parse the response
             response_content = response.choices[0].message.content
-            output_model = self.get_output_model()
-            validated_output = output_model.model_validate_json(response_content)
+            validated_output = PolicyOutput.model_validate_json(response_content)
             
-            # Apply policy updates
-            if validated_output.policy_updates:
-                self._apply_policy_updates(state, validated_output)
-            
-            # Update state with extracted data
+            # Update conversation state
             if validated_output.extracted_data:
-                policy_pack = state.setdefault("policy_pack", {})
-                policy_pack.update(validated_output.extracted_data)
+                data_product = state.get("data_product", {})
+                data_product.update(validated_output.extracted_data)
+                state["data_product"] = data_product
             
-            # Convert to dict format expected by the system
+            # Update policy pack state
+            if validated_output.parsed_policies:
+                policy_pack = state.get("policy_pack", {})
+                policy_pack.update(validated_output.parsed_policies)
+                state["policy_pack"] = policy_pack
+            
+            # Check if all required fields are complete
+            ask_order = self.get_config_list("ask_order", ["access_control", "data_masking", "quality_gates", "retention_policy", "evaluation_points"])
+            policy_pack = state.get("policy_pack", {})
+            
+            # Check if all fields are present
+            all_fields_complete = all(
+                field in policy_pack and policy_pack[field] 
+                for field in ask_order
+            )
+            
+            if all_fields_complete:
+                completion_message = self.get_config("completion_message", "Policy configuration captured.")
+                validated_output.reply = completion_message
+                validated_output.next_action = "complete"
+            
+            # Enhance reply with examples
+            reply = self.enhance_reply_with_example(validated_output.reply, validated_output.next_action)
+            
             return {
-                "reply": validated_output.reply,
+                "reply": reply,
                 "confidence": validated_output.confidence,
                 "next_action": validated_output.next_action,
-                "metadata": validated_output.metadata
+                "metadata": validated_output.metadata,
+                "extracted_data": validated_output.extracted_data,
+                "missing_fields": validated_output.missing_fields,
+                "parsed_policies": validated_output.parsed_policies
             }
             
         except Exception as e:
-            print(f"Error in structured policy agent: {e}")
-            # Fallback to simple response
+            # Preserve the current state even when there's an error
+            policy_pack = state.get("policy_pack", {})
+            
+            # Create a helpful error message that maintains context
+            error_message = f"I encountered an issue processing your message: {str(e)}. "
+            
+            # Check what we have so far and provide context
+            if policy_pack:
+                error_message += "Here's what I have so far:\n"
+                for key, value in policy_pack.items():
+                    error_message += f"- {key}: {value}\n"
+                error_message += "\nPlease continue providing the missing information."
+            else:
+                error_message += "Let me help you start defining your data product policies. What access control rules do you need?"
+            
             return {
-                "reply": f"I encountered an error processing your request: {str(e)}",
+                "reply": error_message,
                 "confidence": 0.0,
-                "next_action": "help",
-                "metadata": {"error": str(e)}
+                "next_action": "retry",
+                "metadata": {"error": str(e), "state_preserved": True},
+                "extracted_data": {},
+                "missing_fields": [],
+                "parsed_policies": {}
             }
-    
-    def _apply_policy_updates(self, state: Dict[str, Any], output: PolicyOutput):
-        """Apply policy updates to the state."""
-        command_type = output.command_type
-        policy_pack = state.setdefault("policy_pack", {})
-        
-        if command_type == "allow":
-            # Handle allow command
-            if output.extracted_data and "roles" in output.extracted_data:
-                access = policy_pack.setdefault("access", {})
-                allow_roles = access.setdefault("allow_roles", [])
-                allow_roles.extend(output.extracted_data["roles"])
-        
-        elif command_type == "deny":
-            # Handle deny command
-            if output.extracted_data and "roles" in output.extracted_data:
-                access = policy_pack.setdefault("access", {})
-                deny_roles = access.setdefault("deny_roles", [])
-                deny_roles.extend(output.extracted_data["roles"])
-        
-        elif command_type == "mask":
-            # Handle mask command
-            if output.extracted_data:
-                access = policy_pack.setdefault("access", {})
-                column_masks = access.setdefault("column_masks", [])
-                
-                mask_config = output.extracted_data
-                new_mask = {
-                    "column": mask_config.get("column", ""),
-                    "masking_expression": mask_config.get("masking_expression", ""),
-                    "applies_to_roles": mask_config.get("applies_to_roles", ["*"])
-                }
-                column_masks.append(new_mask)
-        
-        elif command_type == "gate":
-            # Handle gate command
-            if output.extracted_data:
-                quality_gates = policy_pack.setdefault("quality_gates", [])
-                gate_config = output.extracted_data
-                
-                new_gate = {
-                    "name": gate_config.get("name", ""),
-                    "type": gate_config.get("type", "not_null")
-                }
-                
-                if "column" in gate_config:
-                    new_gate["column"] = gate_config["column"]
-                if "pattern" in gate_config:
-                    new_gate["pattern"] = gate_config["pattern"]
-                if "max_delay" in gate_config:
-                    new_gate["max_delay"] = gate_config["max_delay"]
-                
-                quality_gates.append(new_gate)
-        
-        elif command_type == "retention":
-            # Handle retention command
-            if output.extracted_data:
-                policy_pack["retention"] = output.extracted_data

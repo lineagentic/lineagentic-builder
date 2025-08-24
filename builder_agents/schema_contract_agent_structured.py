@@ -12,7 +12,6 @@ class SchemaInput(BaseModel):
     role: str = Field(description="The role of the message sender")
     state: Dict[str, Any] = Field(description="Current conversation state")
     data_product: Dict[str, Any] = Field(default_factory=dict, description="Current data product specification")
-    current_schema: List[Dict[str, Any]] = Field(default_factory=list, description="Current schema being built")
 
 class SchemaOutput(BaseModel):
     """Output model for schema contract agent."""
@@ -20,9 +19,9 @@ class SchemaOutput(BaseModel):
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Confidence level of the response")
     next_action: Optional[str] = Field(default=None, description="Suggested next action for the user")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
-    command_type: Optional[str] = Field(default=None, description="Type of command detected (output, field, fields_done, sla)")
     extracted_data: Dict[str, Any] = Field(default_factory=dict, description="Extracted data from the message")
-    schema_updates: List[Dict[str, Any]] = Field(default_factory=list, description="Schema updates to apply")
+    missing_fields: List[str] = Field(default_factory=list, description="List of missing required fields")
+    parsed_fields: List[Dict[str, Any]] = Field(default_factory=list, description="Parsed field definitions")
 
 class SchemaContractAgentStructured(BaseStructuredAgent):
     name = "schema_contract"
@@ -34,51 +33,76 @@ class SchemaContractAgentStructured(BaseStructuredAgent):
         return SchemaOutput
     
     def get_system_prompt(self) -> str:
-        commands = self.get_config_dict("commands", {})
+        ask_order = self.get_config_list("ask_order", ["output_name", "output_type", "sink_location", "freshness", "fields"])
+        prompts = self.get_config_dict("prompts", {})
+        completion_message = self.get_config("completion_message", "Schema contract captured.")
+        field_patterns = self.get_config_list("field_patterns", [])
         
-        prompt = f"""You are a data product schema contract agent. Your job is to help users define output interfaces, fields, and SLAs.
+        prompt = f"""You are a data product schema contract agent. Your job is to help users configure output interfaces and schemas for their data product.
 
-Available commands:
-1. output: Define an output interface (e.g., "output:name=customer_profile_v1,type=table,sink=uc.analytics.customer_profile,freshness=15m")
-2. field: Define a field (e.g., "field:name=customer_id,type=string,pk=true,pii=false")
-3. fields:done: Complete the current schema
-4. sla: Define SLAs (e.g., "sla:availability=99.9%,latency=10m")
+Required fields in order: {ask_order}
 
-Command configurations:
-{chr(10).join([f"- {cmd}: {config.get('help', 'No help available')}" for cmd, config in commands.items()])}
+Available prompts:
+{chr(10).join([f"- {field}: {prompts.get(field, f'What is the {field}?')}" for field in ask_order])}
+
+Completion message: {completion_message}
+
+Field parsing patterns:
+{chr(10).join([f"- {pattern}" for pattern in field_patterns])}
+
+CRITICAL: Always check the conversation context first!
+- Review the current data product state to see what's already captured
+- Check conversation history to understand what's been discussed
+- NEVER ask for information that has already been provided
+- Only ask for missing fields that haven't been captured yet
+
+NATURAL LANGUAGE UNDERSTANDING:
+- Users can say things naturally, not just with explicit keywords
+- "data structure" = fields
+- "columns" = fields
+- "data types" = fields
+- "table structure" = fields
+- "output table" = output_name
+- "where to store" = sink_location
+- "how often" = freshness
+- "update frequency" = freshness
 
 Your task:
-1. Detect the command type from the user's message
-2. Extract relevant data from the message
-3. Provide appropriate response based on the command
-4. Suggest next actions
+1. First, analyze the conversation context to understand current progress
+2. Extract any schema configuration information from the user's message
+3. Parse field definitions from natural language (e.g., "customer_id string pk, email string pii")
+4. Identify what schema fields are still missing (only ask for uncaptured fields)
+5. Provide a helpful response guiding the user to the next missing field
+6. If all fields are complete, provide the completion message
+
+When parsing fields, look for patterns like:
+- "field_name data_type [pk] [pii] [description]"
+- Examples: "customer_id string pk", "email string pii", "name string", "age integer"
+- Data types: string, integer, float, boolean, date, timestamp
+- Flags: pk (primary key), pii (personal data), required (not null)
+
+IMPORTANT: Always provide clear examples in your responses to help users understand what you're asking for.
 
 Respond with a JSON object containing:
-- reply: Your response message
+- reply: Your response message (include examples when asking for information)
 - confidence: Your confidence level (0.0 to 1.0)
-- next_action: Suggested next action (e.g., "add_field", "define_sla", "complete")
+- next_action: Suggested next action (e.g., "provide_output_name", "provide_output_type", "complete")
 - metadata: Any additional information
-- command_type: Type of command detected
-- extracted_data: Any data you extracted from the message
-- schema_updates: Any schema updates to apply
+- extracted_data: Any schema configuration data you extracted from the message
+- missing_fields: List of schema fields that are still missing
+- parsed_fields: List of parsed field objects with name, type, pii, pk, required flags
 
-Be helpful and guide the user through the schema definition process."""
+Be helpful and guide the user through the schema configuration process step by step with clear examples, but never repeat questions for information already provided."""
         
         return prompt
     
     def extract_structured_input(self, message: Message, state: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured input from message and state."""
-        data_product = state.get("data_product", {})
-        interfaces = data_product.get("interfaces", {})
-        outputs = interfaces.get("outputs", [])
-        current_schema = state.get("last_schema", [])
-        
         return {
             "message": message.content,
             "role": message.role,
             "state": state,
-            "data_product": data_product,
-            "current_schema": current_schema
+            "data_product": state.get("data_product", {})
         }
     
     def handle(self, state: Dict[str, Any], message: Message) -> Dict[str, Any]:
@@ -99,7 +123,7 @@ Be helpful and guide the user through the schema definition process."""
                 model="gpt-4-turbo-preview",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"User message: {validated_input.message}\nCurrent data product: {validated_input.data_product}\nCurrent schema: {validated_input.current_schema}"}
+                    {"role": "user", "content": f"User message: {validated_input.message}\nCurrent data product: {validated_input.data_product}"}
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.1
@@ -110,14 +134,29 @@ Be helpful and guide the user through the schema definition process."""
             output_model = self.get_output_model()
             validated_output = output_model.model_validate_json(response_content)
             
-            # Apply schema updates
-            if validated_output.schema_updates:
-                self._apply_schema_updates(state, validated_output)
-            
             # Update state with extracted data
             if validated_output.extracted_data:
                 data_product = state.setdefault("data_product", {})
                 data_product.update(validated_output.extracted_data)
+            
+            # Update state with parsed fields
+            if validated_output.parsed_fields:
+                data_product = state.setdefault("data_product", {})
+                interfaces = data_product.setdefault("interfaces", {})
+                outputs = interfaces.setdefault("outputs", [])
+                
+                # Add fields to the current output or create a new one
+                if outputs:
+                    current_output = outputs[-1]
+                    current_output.setdefault("schema", []).extend(validated_output.parsed_fields)
+                else:
+                    # Create a default output if none exists
+                    new_output = {
+                        "name": "output1",
+                        "type": "table",
+                        "schema": validated_output.parsed_fields
+                    }
+                    outputs.append(new_output)
             
             # Convert to dict format expected by the system
             return {
@@ -131,57 +170,8 @@ Be helpful and guide the user through the schema definition process."""
             print(f"Error in structured schema agent: {e}")
             # Fallback to simple response
             return {
-                "reply": f"I encountered an error processing your request: {str(e)}",
+                "reply": f"I encountered an error processing your schema request: {str(e)}",
                 "confidence": 0.0,
                 "next_action": "help",
                 "metadata": {"error": str(e)}
             }
-    
-    def _apply_schema_updates(self, state: Dict[str, Any], output: SchemaOutput):
-        """Apply schema updates to the state."""
-        command_type = output.command_type
-        
-        if command_type == "output":
-            # Handle output command
-            if output.extracted_data:
-                data_product = state.setdefault("data_product", {})
-                interfaces = data_product.setdefault("interfaces", {})
-                outputs = interfaces.setdefault("outputs", [])
-                
-                output_config = output.extracted_data
-                new_output = {
-                    "name": output_config.get("name", "output1"),
-                    "type": output_config.get("type", "table"),
-                    "sink": output_config.get("sink", ""),
-                    "freshness_slo": output_config.get("freshness", ""),
-                    "schema": state.get("last_schema", [])
-                }
-                outputs.append(new_output)
-        
-        elif command_type == "field":
-            # Handle field command
-            if output.extracted_data:
-                last_schema = state.setdefault("last_schema", [])
-                field_config = output.extracted_data
-                
-                new_field = {
-                    "name": field_config.get("name", "col"),
-                    "type": field_config.get("type", "string"),
-                    "pii": field_config.get("pii", False),
-                    "primary_key": field_config.get("pk", False)
-                }
-                
-                if new_field["pii"] and "classification" not in field_config:
-                    new_field["classification"] = "personal"
-                
-                last_schema.append(new_field)
-        
-        elif command_type == "fields_done":
-            # Clear temporary schema
-            state.pop("last_schema", None)
-        
-        elif command_type == "sla":
-            # Handle SLA command
-            if output.extracted_data:
-                data_product = state.setdefault("data_product", {})
-                data_product["sla"] = output.extracted_data

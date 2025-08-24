@@ -1,4 +1,14 @@
 name: "catalog"
-success_message: "Catalog registration would run in CI after merge (stubbed)."
+ask_order: ["catalog_type", "metadata_fields", "lineage_tracking", "discovery_enabled", "quality_metrics"]
+prompts:
+  catalog_type: "What type of catalog system? Example: datahub, atlas, custom, aws-glue, azure-purview"
+  metadata_fields: "Which metadata fields to include? Example: description, owner, tags, schema, business_glossary, data_classification"
+  lineage_tracking: "Enable data lineage tracking? Example: yes, no, or specify: column-level, table-level, job-level"
+  discovery_enabled: "Enable data discovery and search? Example: yes, no, or specify: full-text, semantic, tag-based"
+  quality_metrics: "Which quality metrics to track? Example: freshness, completeness, accuracy, consistency, validity"
+completion_message: "Catalog configuration captured. The data product will be registered in the catalog system."
 keywords:
   - "catalog"
+  - "metadata"
+  - "lineage"
+  - "discovery"

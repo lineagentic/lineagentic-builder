@@ -101,7 +101,7 @@ class AgenticChatApp:
             
             # Run the agent with the message
             with trace("agentic_orchestrator"):
-                result = await Runner.run(self.agent, message, max_turns=5)
+                result = await Runner.run(self.agent, message, max_turns=30)
             
             # Get the response
             response = result.final_output
