@@ -235,6 +235,10 @@ async def scoping_agent(message: str) -> Dict[str, Any]:
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
         
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
+        
         return {
             "agent": "scoping",
             "response": result["reply"],
@@ -278,6 +282,10 @@ async def schema_contract_agent(message: str) -> Dict[str, Any]:
         # Update conversation state
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+        
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
         
         return {
             "agent": "schema_contract",
@@ -323,6 +331,10 @@ async def policy_agent(message: str) -> Dict[str, Any]:
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
         
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
+        
         return {
             "agent": "policy",
             "response": result["reply"],
@@ -366,6 +378,10 @@ async def provisioning_agent(message: str) -> Dict[str, Any]:
         # Update conversation state
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+        
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
         
         return {
             "agent": "provisioning",
@@ -411,6 +427,10 @@ async def docs_agent(message: str) -> Dict[str, Any]:
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
         
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
+        
         return {
             "agent": "docs",
             "response": result["reply"],
@@ -455,6 +475,10 @@ async def catalog_agent(message: str) -> Dict[str, Any]:
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
         
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
+        
         return {
             "agent": "catalog",
             "response": result["reply"],
@@ -498,6 +522,10 @@ async def observability_agent(message: str) -> Dict[str, Any]:
         # Update conversation state
         conversation_state["history"].append({"role": "user", "content": message})
         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+        
+        # Save session state if we have a current session
+        if current_session_id:
+            save_session_state(current_session_id, conversation_state)
         
         return {
             "agent": "observability",

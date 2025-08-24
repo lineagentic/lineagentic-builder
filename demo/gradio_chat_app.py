@@ -109,7 +109,8 @@ class AgenticChatApp:
             # Update history
             history.append([message, response])
             
-            logger.info("Message processed successfully")
+            logger.info(f"Message processed successfully. Response: {response[:100]}...")
+            logger.info(f"History length after update: {len(history)}")
             return history, "Success"
             
         except Exception as e:
@@ -125,7 +126,21 @@ class AgenticChatApp:
         
         try:
             result = await self.mcp_server.call_tool("get_conversation_state", {})
-            return str(result)
+            
+            # Handle MCP response format - result should be a dictionary
+            if hasattr(result, 'content') and result.content:
+                # If it's a structured response, extract the content
+                if hasattr(result.content[0], 'text'):
+                    return result.content[0].text
+                else:
+                    return str(result.content[0])
+            elif isinstance(result, dict):
+                # If it's already a dictionary, convert to JSON
+                import json
+                return json.dumps(result, indent=2)
+            else:
+                # Fallback to string representation
+                return str(result)
         except Exception as e:
             return f"Error getting conversation state: {str(e)}"
     
@@ -169,42 +184,7 @@ def create_chat_interface():
         """
     ) as interface:
         
-        gr.Markdown("""
-        # 🤖 Agentic Orchestrator Chat
-        
-        Welcome to the Data Product Creation Assistant! This AI-powered tool helps you create comprehensive data products through intelligent orchestration of specialized agents.
-        
-        ## 🎯 What can I help you with?
-        
-        **Data Product Scoping:**
-        - Define product name, domain, owner, purpose
-        - Identify upstream data sources
-        - Set business requirements
-        
-        **Schema & Contracts:**
-        - Define data structure and fields
-        - Set up output interfaces
-        - Configure SLAs and quality gates
-        
-        **Governance & Policies:**
-        - Set access controls and permissions
-        - Configure data masking rules
-        - Define retention policies
-        
-        **Infrastructure & Deployment:**
-        - Plan infrastructure requirements
-        - Generate deployment configurations
-        - Set up monitoring and observability
-        
-        ## 💡 Example Messages:
-        
-        - "I want to create a customer360 data product"
-        - "name: customer360"
-        - "domain: sales"
-        - "field:name=customer_id,type=string,pk=true"
-        - "allow:role:sales-manager,role:marketing-analyst"
-        - "What's the current status of my data product?"
-        """)
+
         
         with gr.Row():
             with gr.Column(scale=3):
@@ -228,156 +208,133 @@ def create_chat_interface():
                 
                 with gr.Row():
                     clear_btn = gr.Button("Clear Chat", variant="secondary")
-                    reset_btn = gr.Button("Reset Conversation", variant="secondary")
                     state_btn = gr.Button("Show Current State", variant="secondary")
             
             with gr.Column(scale=1):
-                # Status and controls
-                status_box = gr.Textbox(
-                    label="Status",
-                    value="Initializing...",
-                    interactive=False,
-                    lines=3
+                # State display box
+                state_display = gr.Markdown(
+                    value="📊 **Data Product State**\n\nNo data product being built yet.",
+                    label="Current State",
+                    height=500
                 )
-                
-                gr.Markdown("### Quick Actions")
-                
-                quick_actions = gr.Dropdown(
-                    choices=[
-                        "Get conversation state",
-                        "Reset conversation",
-                        "Start new data product",
-                        "Define schema",
-                        "Set policies",
-                        "Plan infrastructure"
-                    ],
-                    label="Quick Actions",
-                    value="Get conversation state"
-                )
-                
-                quick_action_btn = gr.Button("Execute Quick Action", variant="secondary")
-                
-                # Example messages
-                gr.Markdown("### 💡 Example Messages")
-                
-                example_messages = [
-                    "I want to create a customer360 data product",
-                    "name: customer360",
-                    "domain: sales",
-                    "owner: data-team",
-                    "purpose: Provide comprehensive customer insights",
-                    "field:name=customer_id,type=string,pk=true",
-                    "allow:role:sales-manager",
-                    "What's the current status?"
-                ]
-                
-                for i, example in enumerate(example_messages):
-                    gr.Button(
-                        example,
-                        variant="outline",
-                        size="sm"
-                    ).click(
-                        lambda x=example: x,
-                        outputs=msg
-                    )
-        
+            
         # Event handlers
         async def send_message(message, history):
             if not message.strip():
-                return history, "Please enter a message"
+                return history
             
             # Initialize if not already done
             if not app.initialized:
                 success = await app.initialize()
                 if not success:
-                    return history, "Failed to initialize agent"
+                    history.append([message, "Failed to initialize agent"])
+                    return history
             
-            # Process message
-            new_history, status = await app.chat_with_agent(message, history)
-            return new_history, status
+            try:
+                # Process message with the agent
+                new_history, status = await app.chat_with_agent(message, history)
+                
+                # Ensure the history is properly updated
+                if new_history and len(new_history) > 0:
+                    # The last message should be the user's message and agent's response
+                    last_message = new_history[-1]
+                    if len(last_message) == 2 and last_message[0] == message:
+                        # History is properly formatted, return it
+                        return new_history
+                    else:
+                        # Something went wrong with the history format
+                        logger.warning(f"Unexpected history format: {last_message}")
+                        return new_history
+                else:
+                    # No history returned, create a basic response
+                    history.append([message, "No response received from agent"])
+                    return history
+                    
+            except Exception as e:
+                logger.error(f"Error in send_message: {e}")
+                history.append([message, f"Error: {str(e)}"])
+                return history
         
         async def clear_chat():
-            return [], "Chat cleared"
+            return []
         
-        async def reset_conversation():
-            if app.initialized:
-                result = await app.reset_conversation()
-                return [], f"Conversation reset: {result}"
-            return [], "Agent not initialized"
+
         
         async def show_state():
             if app.initialized:
-                state = await app.get_conversation_state()
-                return [], f"Current state: {state}"
-            return [], "Agent not initialized"
-        
-        async def execute_quick_action(action):
-            if not app.initialized:
-                return [], "Agent not initialized"
-            
-            if action == "Get conversation state":
-                state = await app.get_conversation_state()
-                return [], f"Current state: {state}"
-            elif action == "Reset conversation":
-                result = await app.reset_conversation()
-                return [], f"Conversation reset: {result}"
-            elif action == "Start new data product":
-                return [], "Ready to start new data product. Try: 'I want to create a new data product'"
-            elif action == "Define schema":
-                return [], "Ready to define schema. Try: 'field:name=id,type=string,pk=true'"
-            elif action == "Set policies":
-                return [], "Ready to set policies. Try: 'allow:role:analyst'"
-            elif action == "Plan infrastructure":
-                return [], "Ready to plan infrastructure. Try: 'deploy:environment=production'"
+                try:
+                    state = await app.get_conversation_state()
+                    
+                    # The state should now be a proper JSON string from the MCP response
+                    import json
+                    
+                    try:
+                        # Parse the JSON directly
+                        data = json.loads(state)
+                        
+                        # Extract data_product and policy_pack sections, and include schema information
+                        data_product = data.get("data_product", {})
+                        policy_pack = data.get("policy_pack", {})
+                        
+                        # Create a comprehensive display that includes schema information
+                        display_data = {
+                            "data_product": {
+                                "name": data_product.get("name"),
+                                "domain": data_product.get("domain"),
+                                "owner": data_product.get("owner"),
+                                "purpose": data_product.get("purpose"),
+                                "upstreams": data_product.get("upstreams", []),
+                                "interfaces": data_product.get("interfaces", {}),
+                                "schema": data_product.get("schema", []),
+                                "outputs": data_product.get("outputs", [])
+                            },
+                            "policy_pack": policy_pack
+                        }
+                        
+                        # Format as pretty JSON
+                        pretty_json = json.dumps(display_data, indent=2)
+                        state_message = f"📊 **Data Product State**\n\n```json\n{pretty_json}\n```"
+                        return state_message
+                    except json.JSONDecodeError as e:
+                        # If JSON parsing fails, show the raw state for debugging
+                        return f"❌ **Error parsing JSON:** {str(e)}\n\nRaw state: {state[:200]}..."
+                        
+                except Exception as e:
+                    error_message = f"❌ **Error getting state:** {str(e)}"
+                    return error_message
             else:
-                return [], f"Unknown action: {action}"
+                return "❌ **Agent not initialized**"
+        
+
         
         # Connect event handlers
         send_btn.click(
             send_message,
             inputs=[msg, chatbot],
-            outputs=[chatbot, status_box]
+            outputs=[chatbot]
         )
         
         msg.submit(
             send_message,
             inputs=[msg, chatbot],
-            outputs=[chatbot, status_box]
+            outputs=[chatbot]
         )
         
         clear_btn.click(
             clear_chat,
-            outputs=[chatbot, status_box]
+            outputs=[chatbot]
         )
         
-        reset_btn.click(
-            reset_conversation,
-            outputs=[chatbot, status_box]
-        )
+
         
         state_btn.click(
             show_state,
-            outputs=[chatbot, status_box]
+            outputs=[state_display]
         )
         
-        quick_action_btn.click(
-            execute_quick_action,
-            inputs=[quick_actions],
-            outputs=[chatbot, status_box]
-        )
+
         
-        # Initialize on load
-        async def initialize_on_load():
-            success = await app.initialize()
-            if success:
-                return "Ready to chat! 🚀"
-            else:
-                return "Failed to initialize. Please check your configuration."
-        
-        interface.load(
-            initialize_on_load,
-            outputs=[status_box]
-        )
+
         
         # Cleanup on close
         interface.unload(

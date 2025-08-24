@@ -135,11 +135,14 @@ Be helpful and guide the user through the catalog configuration process step by 
             output_model = self.get_output_model()
             validated_output = output_model.model_validate_json(response_content)
             
-            # Update state with extracted data
+            # Update state with extracted data (avoid duplicates)
             if validated_output.extracted_data:
                 data_product = state.setdefault("data_product", {})
                 catalog_config = data_product.setdefault("catalog", {})
-                catalog_config.update(validated_output.extracted_data)
+                for key, value in validated_output.extracted_data.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in catalog_config or catalog_config[key] != value:
+                        catalog_config[key] = value
             
             # Convert to dict format expected by the system
             return {

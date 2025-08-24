@@ -157,16 +157,22 @@ Be helpful and guide the user through the policy configuration process step by s
             response_content = response.choices[0].message.content
             validated_output = PolicyOutput.model_validate_json(response_content)
             
-            # Update conversation state
+            # Update conversation state (avoid duplicates)
             if validated_output.extracted_data:
                 data_product = state.get("data_product", {})
-                data_product.update(validated_output.extracted_data)
+                for key, value in validated_output.extracted_data.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in data_product or data_product[key] != value:
+                        data_product[key] = value
                 state["data_product"] = data_product
             
-            # Update policy pack state
+            # Update policy pack state (avoid duplicates)
             if validated_output.parsed_policies:
                 policy_pack = state.get("policy_pack", {})
-                policy_pack.update(validated_output.parsed_policies)
+                for key, value in validated_output.parsed_policies.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in policy_pack or policy_pack[key] != value:
+                        policy_pack[key] = value
                 state["policy_pack"] = policy_pack
             
             # Check if all required fields are complete

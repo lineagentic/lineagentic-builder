@@ -134,12 +134,15 @@ Be helpful and guide the user through the schema configuration process step by s
             output_model = self.get_output_model()
             validated_output = output_model.model_validate_json(response_content)
             
-            # Update state with extracted data
+            # Update state with extracted data (avoid duplicates)
             if validated_output.extracted_data:
                 data_product = state.setdefault("data_product", {})
-                data_product.update(validated_output.extracted_data)
+                for key, value in validated_output.extracted_data.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in data_product or data_product[key] != value:
+                        data_product[key] = value
             
-            # Update state with parsed fields
+            # Update state with parsed fields (avoid duplicates)
             if validated_output.parsed_fields:
                 data_product = state.setdefault("data_product", {})
                 interfaces = data_product.setdefault("interfaces", {})
@@ -148,7 +151,19 @@ Be helpful and guide the user through the schema configuration process step by s
                 # Add fields to the current output or create a new one
                 if outputs:
                     current_output = outputs[-1]
-                    current_output.setdefault("schema", []).extend(validated_output.parsed_fields)
+                    schema = current_output.setdefault("schema", [])
+                    
+                    # Add fields without duplicates
+                    for new_field in validated_output.parsed_fields:
+                        field_name = new_field.get("name")
+                        existing_field = next((f for f in schema if f.get("name") == field_name), None)
+                        
+                        if not existing_field:
+                            # Add new field
+                            schema.append(new_field)
+                        else:
+                            # Update existing field with new information (merge)
+                            existing_field.update(new_field)
                 else:
                     # Create a default output if none exists
                     new_output = {

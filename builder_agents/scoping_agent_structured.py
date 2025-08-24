@@ -154,10 +154,13 @@ Be helpful and guide the user through the scoping process step by step with clea
             response_content = response.choices[0].message.content
             validated_output = ScopingOutput.model_validate_json(response_content)
             
-            # Update conversation state
+            # Update conversation state (avoid duplicates)
             if validated_output.extracted_data:
                 data_product = state.get("data_product", {})
-                data_product.update(validated_output.extracted_data)
+                for key, value in validated_output.extracted_data.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in data_product or data_product[key] != value:
+                        data_product[key] = value
                 state["data_product"] = data_product
             
             # Check if all required fields are complete

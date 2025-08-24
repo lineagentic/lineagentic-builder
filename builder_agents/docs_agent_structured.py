@@ -151,12 +151,16 @@ Be helpful and guide the user through the documentation configuration process st
             response_content = response.choices[0].message.content
             validated_output = DocsOutput.model_validate_json(response_content)
             
-            # Update conversation state
+            # Update conversation state (avoid duplicates)
             if validated_output.extracted_data:
                 data_product = state.get("data_product", {})
                 if "documentation" not in data_product:
                     data_product["documentation"] = {}
-                data_product["documentation"].update(validated_output.extracted_data)
+                documentation = data_product["documentation"]
+                for key, value in validated_output.extracted_data.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in documentation or documentation[key] != value:
+                        documentation[key] = value
                 state["data_product"] = data_product
             
             # Check if all required fields are complete

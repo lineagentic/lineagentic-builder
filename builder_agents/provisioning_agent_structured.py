@@ -137,12 +137,15 @@ Be helpful and guide the user through the provisioning configuration process ste
             output_model = self.get_output_model()
             validated_output = output_model.model_validate_json(response_content)
             
-            # Update state with extracted data
+            # Update state with extracted data (avoid duplicates)
             if validated_output.extracted_data:
                 # Update the data_product with provisioning configuration
                 data_product = state.setdefault("data_product", {})
                 provisioning_config = data_product.setdefault("provisioning", {})
-                provisioning_config.update(validated_output.extracted_data)
+                for key, value in validated_output.extracted_data.items():
+                    # Only update if value is different or doesn't exist
+                    if key not in provisioning_config or provisioning_config[key] != value:
+                        provisioning_config[key] = value
             
             # Convert to dict format expected by the system
             return {
