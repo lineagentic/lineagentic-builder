@@ -1,0 +1,13 @@
+name: "docs"
+ask_order: ["doc_type", "sections", "format", "audience", "artifacts"]
+prompts:
+  doc_type: "What type of documentation? Example: technical, user-guide, api-docs, data-dictionary, runbook"
+  sections: "Which sections to include? Example: overview, setup, usage, examples, troubleshooting, api-reference"
+  format: "What format? Example: markdown, html, pdf, confluence, readme, sphinx"
+  audience: "Who is the target audience? Example: developers, analysts, business-users, data-scientists, devops"
+  artifacts: "Which artifacts to document? Example: data-product.yaml, policy-pack.yaml, schema.json, pipeline.py"
+completion_message: "Documentation configuration captured. Docs will be generated and included in PR description."
+keywords:
+  - "docs"
+  - "doc"
+  - "documentation"

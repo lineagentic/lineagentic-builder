@@ -1,0 +1,15 @@
+name: "observability"
+ask_order: ["metrics", "alerts", "dashboards", "latency_threshold", "availability_target"]
+prompts:
+  metrics: "Which metrics to track? Example: freshness, completeness, accuracy, volume, quality_score, processing_time"
+  alerts: "What alerts to set up? Example: data-freshness > 1 hour, quality-score < 0.9, pipeline-failure, volume-drop > 50%"
+  dashboards: "What dashboards to create? Example: data-quality, pipeline-health, business-metrics, sla-monitoring"
+  latency_threshold: "What is the acceptable latency threshold? Example: 5 minutes, 1 hour, 15 minutes, real-time"
+  availability_target: "What is the availability target? Example: 99.9%, 99.99%, 99.5%, 95%"
+completion_message: "Observability configuration captured. Monitoring and alerting will be set up."
+keywords:
+  - "observ"
+  - "observability"
+  - "monitoring"
+  - "metrics"
+  - "alerts"

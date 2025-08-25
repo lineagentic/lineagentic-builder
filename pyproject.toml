@@ -1,0 +1,93 @@
+[project]
+name = "lineagentic-builder"
+version = "1.0.2"
+description = "Lineagentic-builder is agentic ai chat basedapproach for building data data products."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+authors = [
+    {name = "Lineagentic Builder Team", email = "team@lineagentic.com"}
+]
+keywords = ["data-product", "ai-agents", "data-processing", "data-product-building"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "anthropic>=0.49.0",
+    "autogen-agentchat==0.6.1",
+    "autogen-ext[grpc,mcp,ollama,openai]==0.6.1",
+    "bs4>=0.0.2",
+    "fastapi>=0.115.0",
+    "gradio>=5.22.0",
+    "httpx>=0.28.1",
+    "ipykernel>=6.29.5",
+    "ipython>=8.0.0,<9.0.0",
+    "ipywidgets>=8.1.5",
+    "jupyter>=1.1.1",
+    "langchain-anthropic>=0.3.10",
+    "langchain-community>=0.3.20",
+    "langchain-experimental>=0.3.4",
+    "langchain-openai>=0.3.9",
+    "langgraph>=0.3.18",
+    "langgraph-checkpoint-sqlite>=2.0.6",
+    "langsmith>=0.3.18",
+    "lxml>=5.3.1",
+    "mcp-server-fetch>=2025.1.17",
+    "mcp[cli]>=1.5.0",
+    "mysql-connector-python>=8.0.0",
+    "nbformat>=4.2.0",
+    "neo4j>=5.20.0",
+    "openai==1.91.0",
+    "openai-agents==0.0.19",
+    "playwright>=1.51.0",
+    "plotly>=6.0.1",
+    "polygon-api-client>=1.14.5",
+    "psutil>=7.0.0",
+    "pypdf>=5.4.0",
+    "pypdf2>=3.0.1",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+    "semantic-kernel>=1.25.0",
+    "sendgrid>=6.11.0",
+    "setuptools>=78.1.0",
+    "smithery>=0.1.0",
+    "speedtest-cli>=2.1.3",
+    "watchdog>=6.0.0",
+    "wikipedia>=1.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel>=6.29.5",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/lineagentic/lineagentic-builder"
+Documentation = "https://lineagentic-builder.readthedocs.io"
+Repository = "https://github.com/lineagentic/lineagentic-builder"
+Issues = "https://github.com/lineagentic/lineagentic-builder/issues"
+
+
+
+[project.scripts]
+lineagentic = "cli.main:main"
+
+[build-system]
+requires = ["setuptools>=78.1.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["builder_agents*", "cli*"]
+
+[tool.setuptools.package-data]
+"builder_agents" = [ "*.md"]
+"cli" = ["*.md"]
+
