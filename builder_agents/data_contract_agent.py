@@ -1,20 +1,20 @@
 """
-Structured Schema Contract Agent using OpenAI structured output and Pydantic models.
+Structured Data Contract Agent using OpenAI structured output and Pydantic models.
 """
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
 from .base import BaseStructuredAgent, Message
 
-class SchemaInput(BaseModel):
-    """Input model for schema contract agent."""
+class DataContractInput(BaseModel):
+    """Input model for data contract agent."""
     message: str = Field(description="The user's message")
     role: str = Field(description="The role of the message sender")
     state: Dict[str, Any] = Field(description="Current conversation state")
     data_product: Dict[str, Any] = Field(default_factory=dict, description="Current data product specification")
 
-class SchemaOutput(BaseModel):
-    """Output model for schema contract agent."""
+class DataContractOutput(BaseModel):
+    """Output model for data contract agent."""
     reply: str = Field(description="The response message to send to the user")
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Confidence level of the response")
     next_action: Optional[str] = Field(default=None, description="Suggested next action for the user")
@@ -23,18 +23,18 @@ class SchemaOutput(BaseModel):
     missing_fields: List[str] = Field(default_factory=list, description="List of missing required fields")
     parsed_fields: List[Dict[str, Any]] = Field(default_factory=list, description="Parsed field definitions")
 
-class SchemaContractAgentStructured(BaseStructuredAgent):
-    name = "schema_contract"
+class DataContractAgentStructured(BaseStructuredAgent):
+    name = "data_contract"
     
-    def get_input_model(self) -> type[SchemaInput]:
-        return SchemaInput
+    def get_input_model(self) -> type[DataContractInput]:
+        return DataContractInput
     
-    def get_output_model(self) -> type[SchemaOutput]:
-        return SchemaOutput
+    def get_output_model(self) -> type[DataContractOutput]:
+        return DataContractOutput
     
     def get_system_prompt(self) -> str:
-        from .schema_contract_agent_instructions import SCHEMA_CONTRACT_AGENT_SYSTEM_PROMPT
-        return SCHEMA_CONTRACT_AGENT_SYSTEM_PROMPT
+        from .data_contract_agent_instructions import DATA_CONTRACT_AGENT_SYSTEM_PROMPT
+        return DATA_CONTRACT_AGENT_SYSTEM_PROMPT
     
     def extract_structured_input(self, message: Message, state: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured input from message and state."""
@@ -85,33 +85,19 @@ class SchemaContractAgentStructured(BaseStructuredAgent):
             # Update state with parsed fields (avoid duplicates)
             if validated_output.parsed_fields:
                 data_product = state.setdefault("data_product", {})
-                interfaces = data_product.setdefault("interfaces", {})
-                outputs = interfaces.setdefault("outputs", [])
+                fields = data_product.setdefault("fields", [])
                 
-                # Add fields to the current output or create a new one
-                if outputs:
-                    current_output = outputs[-1]
-                    schema = current_output.setdefault("schema", [])
+                # Add fields without duplicates
+                for new_field in validated_output.parsed_fields:
+                    field_name = new_field.get("name")
+                    existing_field = next((f for f in fields if f.get("name") == field_name), None)
                     
-                    # Add fields without duplicates
-                    for new_field in validated_output.parsed_fields:
-                        field_name = new_field.get("name")
-                        existing_field = next((f for f in schema if f.get("name") == field_name), None)
-                        
-                        if not existing_field:
-                            # Add new field
-                            schema.append(new_field)
-                        else:
-                            # Update existing field with new information (merge)
-                            existing_field.update(new_field)
-                else:
-                    # Create a default output if none exists
-                    new_output = {
-                        "name": "output1",
-                        "type": "table",
-                        "schema": validated_output.parsed_fields
-                    }
-                    outputs.append(new_output)
+                    if not existing_field:
+                        # Add new field
+                        fields.append(new_field)
+                    else:
+                        # Update existing field with new information (merge)
+                        existing_field.update(new_field)
             
             # Convert to dict format expected by the system
             return {
@@ -122,10 +108,10 @@ class SchemaContractAgentStructured(BaseStructuredAgent):
             }
             
         except Exception as e:
-            print(f"Error in structured schema agent: {e}")
+            print(f"Error in structured data contract agent: {e}")
             # Fallback to simple response
             return {
-                "reply": f"I encountered an error processing your schema request: {str(e)}",
+                "reply": f"I encountered an error processing your data contract request: {str(e)}",
                 "confidence": 0.0,
                 "next_action": "help",
                 "metadata": {"error": str(e)}

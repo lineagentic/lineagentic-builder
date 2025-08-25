@@ -37,7 +37,7 @@ class RoutingAgentStructured(BaseStructuredAgent):
     def extract_structured_input(self, message: Message, state: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured input from message and state."""
         # Get available agents from the state or use default list
-        available_agents = state.get("available_agents", ["scoping", "schema_contract", "policy", "provisioning", "docs", "catalog", "observability"])
+        available_agents = state.get("available_agents", ["scoping", "data_contract", "policy", "provisioning", "docs", "catalog", "observability"])
         
         return {
             "message": message.content,
@@ -53,7 +53,7 @@ class RoutingAgentStructured(BaseStructuredAgent):
             conversation_context = self._build_conversation_context(state)
             
             # Get available agents (this could be passed from the server)
-            available_agents = ["scoping", "schema_contract", "policy", "provisioning", "docs", "catalog", "observability"]
+            available_agents = ["scoping", "data_contract", "policy", "provisioning", "docs", "catalog", "observability"]
             
             # Create input for the agent
             input_data = RoutingInput(

@@ -24,7 +24,7 @@ from openai import OpenAI
 # Import the agents
 from builder_agents.scoping_agent import ScopingAgentStructured
 from builder_agents.routing_agent import RoutingAgentStructured
-# from builder_agents.schema_contract_agent import SchemaContractAgentStructured
+from builder_agents.data_contract_agent import DataContractAgentStructured
 # from builder_agents.policy_agent import PolicyAgentStructured
 # from builder_agents.provisioning_agent import ProvisioningAgentStructured
 # from builder_agents.docs_agent import DocsAgentStructured
@@ -193,7 +193,7 @@ try:
         agents = {
             "scoping": ScopingAgentStructured(openai_client=openai_client),
             "routing": RoutingAgentStructured(openai_client=openai_client),
-            # "schema_contract": SchemaContractAgentStructured(openai_client=openai_client),
+            "data_contract": DataContractAgentStructured(openai_client=openai_client),
             # "policy": PolicyAgentStructured(openai_client=openai_client),
             # "provisioning": ProvisioningAgentStructured(openai_client=openai_client),
             # "docs": DocsAgentStructured(openai_client=openai_client),
@@ -256,54 +256,6 @@ async def scoping_agent(message: str) -> Dict[str, Any]:
             "response": f"Error in scoping agent: {str(e)}",
             "confidence": 0.0
         }
-
-# @mcp.tool()
-# async def schema_contract_agent(message: str) -> Dict[str, Any]:
-#     """
-#     Schema contract agent for defining data product schema and contracts.
-#     
-#     Args:
-#         message: User message containing schema information
-#         
-#     Returns:
-#         Agent response with reply, confidence, next_action, and metadata
-#     """
-#     try:
-#         if "schema_contract" not in agents:
-#             return {
-#                 "agent": "schema_contract",
-#                 "error": "Agent not initialized - OPENAI_API_KEY required",
-#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-#                 "confidence": 0.0
-#             }
-#         
-#         agent = agents["schema_contract"]
-#         msg = Message("user", message)
-#         result = await agent.handle_async(conversation_state, msg)
-#         
-#         # Update conversation state
-#         conversation_state["history"].append({"role": "user", "content": message})
-#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-#         
-#         # Save session state if we have a current session
-#         if current_session_id:
-#             save_session_state(current_session_id, conversation_state)
-#         
-#         return {
-#             "agent": "schema_contract",
-#             "response": result["reply"],
-#             "confidence": result["confidence"],
-#             "next_action": result["next_action"],
-#             "metadata": result["metadata"],
-#             "current_state": conversation_state
-#         }
-#     except Exception as e:
-#         return {
-#             "agent": "schema_contract",
-#             "error": str(e),
-#             "response": f"Error in schema contract agent: {str(e)}",
-#             "confidence": 0.0
-#         }
 
 # @mcp.tool()
 # async def policy_agent(message: str) -> Dict[str, Any]:

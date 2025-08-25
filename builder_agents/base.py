@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pydantic import BaseModel, Field
 from openai import OpenAI
-from config import get_agent_config
+# Config loading removed - agents now use instruction files
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -39,15 +39,14 @@ class BaseStructuredAgent(ABC):
     
     def __init__(self, config_dir: Optional[str] = None, openai_client: Optional[OpenAI] = None):
         """
-        Initialize the agent with configuration and OpenAI client.
+        Initialize the agent with OpenAI client.
         
         Args:
-            config_dir: Optional path to configuration directory
+            config_dir: Optional path to configuration directory (kept for compatibility)
             openai_client: OpenAI client instance (required)
         """
         self.config_dir = config_dir
-        self._config = None
-        self._load_config_sync()
+        self._config = {}  # Empty config since we use instruction files
         
         # Initialize OpenAI client
         if openai_client is None:
@@ -62,82 +61,44 @@ class BaseStructuredAgent(ABC):
             self.client = openai_client
             logger.info(f"OpenAI client provided for {self.name} agent")
     
-    async def _load_config(self):
-        """Load configuration for this agent."""
-        try:
-            # Extract agent name from class name (e.g., ScopingAgent -> scoping)
-            agent_name = self.name
-            self._config = await get_agent_config(agent_name, self.config_dir)
-            logger.info(f"Configuration loaded for {self.name} agent: {len(self._config)} keys")
-        except Exception as e:
-            logger.warning(f"Could not load config for {self.name}: {e}")
-            self._config = {}
-    
-    def _load_config_sync(self):
-        """Synchronous version for backward compatibility."""
-        import asyncio
-        try:
-            # Try to get the current event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # If we're in an async context, schedule the async call
-                asyncio.create_task(self._load_config())
-            except RuntimeError:
-                # No running loop, create one
-                asyncio.run(self._load_config())
-        except Exception as e:
-            logger.warning(f"Could not load config for {self.name}: {e}")
-            self._config = {}
-    
     def get_config(self, key: str, default: Any = None) -> Any:
         """
-        Get a configuration value.
+        Get a configuration value (simplified - returns default since configs are in instruction files).
         
         Args:
             key: Configuration key
             default: Default value if key not found
             
         Returns:
-            Configuration value or default
+            Default value since configs are now in instruction files
         """
-        keys = key.split('.')
-        value = self._config
-        
-        for k in keys:
-            if isinstance(value, dict) and k in value:
-                value = value[k]
-            else:
-                return default
-        
-        return value
+        return default
     
     def get_config_list(self, key: str, default: List[Any] = None) -> List[Any]:
         """
-        Get a configuration list value.
+        Get a configuration list value (simplified - returns default since configs are in instruction files).
         
         Args:
             key: Configuration key
             default: Default value if key not found
             
         Returns:
-            Configuration list or default
+            Default list since configs are now in instruction files
         """
-        value = self.get_config(key, default or [])
-        return value if isinstance(value, list) else default or []
+        return default or []
     
     def get_config_dict(self, key: str, default: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Get a configuration dictionary value.
+        Get a configuration dictionary value (simplified - returns default since configs are in instruction files).
         
         Args:
             key: Configuration key
             default: Default value if key not found
             
         Returns:
-            Configuration dict or default
+            Default dict since configs are now in instruction files
         """
-        value = self.get_config(key, default or {})
-        return value if isinstance(value, dict) else default or {}
+        return default or {}
     
     def format_template(self, template: str, **kwargs) -> str:
         """
@@ -158,21 +119,15 @@ class BaseStructuredAgent(ABC):
     
     def get_example_for_field(self, field_name: str) -> str:
         """
-        Get an example for a specific field from the config.
+        Get an example for a specific field (simplified - examples are now in instruction files).
         
         Args:
             field_name: Name of the field to get example for
             
         Returns:
-            Example string for the field
+            Empty string since examples are now in instruction files
         """
-        prompts = self.get_config_dict("prompts", {})
-        if field_name in prompts:
-            prompt = prompts[field_name]
-            # Extract example from prompt (after "Example:")
-            if "Example:" in prompt:
-                example_part = prompt.split("Example:")[1].strip()
-                return example_part
+        # Examples are now embedded in the instruction files, not in config
         return ""
     
     def get_next_field_example(self, current_field: str) -> str:

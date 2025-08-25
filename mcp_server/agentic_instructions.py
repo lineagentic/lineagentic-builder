@@ -34,7 +34,11 @@ def comprehensive_agentic_instructions(name: str):
     • Fields: name, domain, owner, purpose, upstream/data sources  
     • Updates: `data_product` object  
 
-    *(Other agents like Schema, Policy, Provisioning, Docs, Catalog, Observability exist but may be inactive/commented out. When enabled, follow same orchestration pattern.)*  
+    **3. Data Contract Agent** – Defines output schemas and interfaces  
+    • Fields: output_name, output_type, fields, sink_location, freshness  
+    • Updates: `data_product` object with contract details  
+
+    *(Other agents like Policy, Provisioning, Docs, Catalog, Observability exist but may be inactive/commented out. When enabled, follow same orchestration pattern.)*  
 
     ---
     ## WORKFLOW
@@ -58,7 +62,7 @@ def comprehensive_agentic_instructions(name: str):
     - Reference past answers  
 
     **Step 5 – Completion + Review**  
-    - Use `get_conversation_state()` to summarize final scope/policies  
+    - Use `get_conversation_state()` to summarize final scope/contracts  
     - Confirm completeness  
     - Suggest next steps  
 
@@ -84,7 +88,7 @@ def comprehensive_agentic_instructions(name: str):
     ## COMPLETION DETECTION
 
     - If required fields for an agent are filled → mark complete  
-    - If user asks “what’s next” → move to next logical step  
+    - If user asks "what's next" → move to next logical step  
     - Acknowledge completion explicitly before advancing  
 
     ---

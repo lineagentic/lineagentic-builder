@@ -1,5 +1,6 @@
 """
 Configuration module for the agentic data product builder.
+Simplified configuration system that relies on instruction files.
 """
 
 from .config_loader import (

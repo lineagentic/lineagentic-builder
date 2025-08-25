@@ -1,0 +1,29 @@
+{
+  "session_id": "1639a2ee-ec57-4c3c-b0f5-bdf2b28a097c",
+  "created_at": "2025-08-25T13:35:29.870861",
+  "last_updated": "2025-08-25T13:35:29.870877",
+  "state": {
+    "data_product": {
+      "name": "customer360",
+      "domain": "sales",
+      "owner": "john.doe@company.com",
+      "purpose": "Comprehensive customer data analysis for sales optimization",
+      "upstreams": [
+        "crm.salesforce",
+        "billing.stripe",
+        "web.events"
+      ]
+    },
+    "policy_pack": {},
+    "history": [
+      {
+        "role": "user",
+        "content": "Define a data product with the following details: \nname: customer360\nDomain: sales\nOwner: john.doe@company.com\nPurpose: Comprehensive customer data analysis for sales optimization\nUpstreams: [crm.salesforce, billing.stripe, web.events]"
+      },
+      {
+        "role": "assistant",
+        "content": "Scope captured. Next, let's define your output interfaces (name, type, sink, schema)."
+      }
+    ]
+  }
+}
