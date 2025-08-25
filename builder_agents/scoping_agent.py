@@ -4,7 +4,7 @@ Structured Scoping Agent using OpenAI structured output and Pydantic models.
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
-from .base_structured import BaseStructuredAgent, Message
+from .base import BaseStructuredAgent, Message
 
 class ScopingInput(BaseModel):
     """Input model for scoping agent."""
@@ -31,88 +31,8 @@ class ScopingAgentStructured(BaseStructuredAgent):
         return ScopingOutput
     
     def get_system_prompt(self) -> str:
-        ask_order = self.get_config_list("ask_order", ["name", "domain", "owner", "purpose", "upstreams"])
-        prompts = self.get_config_dict("prompts", {})
-        completion_message = self.get_config("completion_message", "Scope captured.")
-        
-        prompt = f"""You are a data product scoping agent. Your job is to help users define the basic scope of their data product.
-
-Required fields in order: {ask_order}
-
-Available prompts:
-{chr(10).join([f"- {field}: {prompts.get(field, f'What is the {field}?')}" for field in ask_order])}
-
-Completion message: {completion_message}
-
-CRITICAL: Always check the conversation context first!
-- Review the current data product state to see what's already captured
-- Check conversation history to understand what's been discussed
-- NEVER ask for information that has already been provided
-- Only ask for missing fields that haven't been captured yet
-- When user provides upstream sources (like "billing.stripes"), extract and store them properly
-
-NATURAL LANGUAGE UNDERSTANDING:
-- Users can say things naturally, not just with explicit keywords
-- "upstream source" = upstreams field
-- "data source" = upstreams field  
-- "where data comes from" = upstreams field
-- "product name" = name field
-- "business domain" = domain field
-- "who owns it" = owner field
-- "what's the purpose" = purpose field
-
-EXTRACTION RULES:
-- ALWAYS extract email addresses when provided (e.g., "mm@gmail.com" → owner: "mm@gmail.com")
-- ALWAYS extract team IDs when provided (e.g., "team:data-engineering" → owner: "team:data-engineering")
-- ALWAYS extract domain names when provided (e.g., "sales" → domain: "sales")
-- ALWAYS extract product names when provided (e.g., "customr-44" → name: "customr-44")
-- ALWAYS extract upstream sources when provided (e.g., "crm.ff" → upstreams: ["crm.ff"])
-
-UPSTREAM SOURCE EXTRACTION:
-- Look for ANY mention of data sources in the message
-- Common patterns: "crm.ff", "crm.custom", "crm.tt", "billing.stripe", "web.events"
-- Extract ALL sources mentioned, even if they seem incomplete
-- If user says "source is crm.tt", extract "crm.tt" as upstream source
-- If user says "crm.ff", extract "crm.ff" as upstream source
-- If user says "crm.custom", extract "crm.custom" as upstream source
-- Combine multiple sources into a list: ["crm.ff", "crm.custom", "crm.tt"]
-
-STATE CHECKING RULES:
-- BEFORE asking for any field, check if it's already in the current data_product state
-- If a field is already present in the state, DO NOT ask for it again
-- If the user provides new information, extract it and update the state
-- Only ask for fields that are actually missing from the current state
-
-Your task:
-1. First, analyze the conversation context to understand current progress
-2. Check what's already in the data_product state - DO NOT ask for fields that are already there
-3. Extract any information from the user's message (be thorough with natural language!)
-4. Identify what fields are still missing (only ask for uncaptured fields)
-5. Provide a helpful response guiding the user to the next missing field
-6. If all fields are complete, provide the completion message
-
-IMPORTANT RULES:
-- If user mentions upstream sources (e.g., "crm.ff", "crm.custom", "crm.tt"), extract them as "upstreams" field
-- If user says "no" to additional sources, treat current upstreams as complete
-- Always provide clear examples in your responses
-- Never ask for the same field twice if it's already been provided
-- Understand natural language variations of field names
-- ALWAYS extract email addresses, team IDs, domain names, and product names when they appear in the message
-- If the user provides an email address like "mm@gmail.com", immediately extract it as the owner
-- CHECK THE CURRENT STATE FIRST - if owner is already set, don't ask for it again
-- BE THOROUGH in extracting upstream sources - look for ANY mention of data sources
-
-Respond with a JSON object containing:
-- reply: Your response message (include examples when asking for information)
-- confidence: Your confidence level (0.0 to 1.0)
-- next_action: Suggested next action (e.g., "provide_domain", "provide_owner", "complete")
-- metadata: Any additional information
-- extracted_data: Any data you extracted from the message (be thorough!)
-- missing_fields: List of fields that are still missing
-
-Be helpful and guide the user through the scoping process step by step with clear examples, but never repeat questions for information already provided."""
-        
-        return prompt
+        from .scoping_agent_instructions import SCOPING_AGENT_SYSTEM_PROMPT
+        return SCOPING_AGENT_SYSTEM_PROMPT
     
     def extract_structured_input(self, message: Message, state: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured input from message and state."""

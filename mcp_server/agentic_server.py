@@ -22,14 +22,15 @@ from mcp.server.fastmcp import FastMCP
 from openai import OpenAI
 
 # Import the agents
-from builder_agents.scoping_agent_structured import ScopingAgentStructured
-from builder_agents.schema_contract_agent_structured import SchemaContractAgentStructured
-from builder_agents.policy_agent_structured import PolicyAgentStructured
-from builder_agents.provisioning_agent_structured import ProvisioningAgentStructured
-from builder_agents.docs_agent_structured import DocsAgentStructured
-from builder_agents.catalog_agent_structured import CatalogAgentStructured
-from builder_agents.observability_agent_structured import ObservabilityAgentStructured
-from builder_agents.base_structured import Message
+from builder_agents.scoping_agent import ScopingAgentStructured
+from builder_agents.routing_agent import RoutingAgentStructured
+# from builder_agents.schema_contract_agent import SchemaContractAgentStructured
+# from builder_agents.policy_agent import PolicyAgentStructured
+# from builder_agents.provisioning_agent import ProvisioningAgentStructured
+# from builder_agents.docs_agent import DocsAgentStructured
+# from builder_agents.catalog_agent import CatalogAgentStructured
+# from builder_agents.observability_agent import ObservabilityAgentStructured
+from builder_agents.base import Message
 
 # Initialize MCP server
 mcp = FastMCP("agentic_orchestration_server")
@@ -191,12 +192,13 @@ try:
     if openai_client:
         agents = {
             "scoping": ScopingAgentStructured(openai_client=openai_client),
-            "schema_contract": SchemaContractAgentStructured(openai_client=openai_client),
-            "policy": PolicyAgentStructured(openai_client=openai_client),
-            "provisioning": ProvisioningAgentStructured(openai_client=openai_client),
-            "docs": DocsAgentStructured(openai_client=openai_client),
-            "catalog": CatalogAgentStructured(openai_client=openai_client),
-            "observability": ObservabilityAgentStructured(openai_client=openai_client)
+            "routing": RoutingAgentStructured(openai_client=openai_client),
+            # "schema_contract": SchemaContractAgentStructured(openai_client=openai_client),
+            # "policy": PolicyAgentStructured(openai_client=openai_client),
+            # "provisioning": ProvisioningAgentStructured(openai_client=openai_client),
+            # "docs": DocsAgentStructured(openai_client=openai_client),
+            # "catalog": CatalogAgentStructured(openai_client=openai_client),
+            # "observability": ObservabilityAgentStructured(openai_client=openai_client)
         }
         logging.info(f"Successfully initialized {len(agents)} agents with OpenAI client")
     else:
@@ -255,293 +257,293 @@ async def scoping_agent(message: str) -> Dict[str, Any]:
             "confidence": 0.0
         }
 
-@mcp.tool()
-async def schema_contract_agent(message: str) -> Dict[str, Any]:
-    """
-    Schema contract agent for defining data product schema and contracts.
-    
-    Args:
-        message: User message containing schema information
-        
-    Returns:
-        Agent response with reply, confidence, next_action, and metadata
-    """
-    try:
-        if "schema_contract" not in agents:
-            return {
-                "agent": "schema_contract",
-                "error": "Agent not initialized - OPENAI_API_KEY required",
-                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-                "confidence": 0.0
-            }
-        
-        agent = agents["schema_contract"]
-        msg = Message("user", message)
-        result = await agent.handle_async(conversation_state, msg)
-        
-        # Update conversation state
-        conversation_state["history"].append({"role": "user", "content": message})
-        conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-        
-        # Save session state if we have a current session
-        if current_session_id:
-            save_session_state(current_session_id, conversation_state)
-        
-        return {
-            "agent": "schema_contract",
-            "response": result["reply"],
-            "confidence": result["confidence"],
-            "next_action": result["next_action"],
-            "metadata": result["metadata"],
-            "current_state": conversation_state
-        }
-    except Exception as e:
-        return {
-            "agent": "schema_contract",
-            "error": str(e),
-            "response": f"Error in schema contract agent: {str(e)}",
-            "confidence": 0.0
-        }
+# @mcp.tool()
+# async def schema_contract_agent(message: str) -> Dict[str, Any]:
+#     """
+#     Schema contract agent for defining data product schema and contracts.
+#     
+#     Args:
+#         message: User message containing schema information
+#         
+#     Returns:
+#         Agent response with reply, confidence, next_action, and metadata
+#     """
+#     try:
+#         if "schema_contract" not in agents:
+#             return {
+#                 "agent": "schema_contract",
+#                 "error": "Agent not initialized - OPENAI_API_KEY required",
+#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+#                 "confidence": 0.0
+#             }
+#         
+#         agent = agents["schema_contract"]
+#         msg = Message("user", message)
+#         result = await agent.handle_async(conversation_state, msg)
+#         
+#         # Update conversation state
+#         conversation_state["history"].append({"role": "user", "content": message})
+#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+#         
+#         # Save session state if we have a current session
+#         if current_session_id:
+#             save_session_state(current_session_id, conversation_state)
+#         
+#         return {
+#             "agent": "schema_contract",
+#             "response": result["reply"],
+#             "confidence": result["confidence"],
+#             "next_action": result["next_action"],
+#             "metadata": result["metadata"],
+#             "current_state": conversation_state
+#         }
+#     except Exception as e:
+#         return {
+#             "agent": "schema_contract",
+#             "error": str(e),
+#             "response": f"Error in schema contract agent: {str(e)}",
+#             "confidence": 0.0
+#         }
 
-@mcp.tool()
-async def policy_agent(message: str) -> Dict[str, Any]:
-    """
-    Policy agent for defining data product policies and governance.
-    
-    Args:
-        message: User message containing policy information
-        
-    Returns:
-        Agent response with reply, confidence, next_action, and metadata
-    """
-    try:
-        if "policy" not in agents:
-            return {
-                "agent": "policy",
-                "error": "Agent not initialized - OPENAI_API_KEY required",
-                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-                "confidence": 0.0
-            }
-        
-        agent = agents["policy"]
-        msg = Message("user", message)
-        result = await agent.handle_async(conversation_state, msg)
-        
-        # Update conversation state
-        conversation_state["history"].append({"role": "user", "content": message})
-        conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-        
-        # Save session state if we have a current session
-        if current_session_id:
-            save_session_state(current_session_id, conversation_state)
-        
-        return {
-            "agent": "policy",
-            "response": result["reply"],
-            "confidence": result["confidence"],
-            "next_action": result["next_action"],
-            "metadata": result["metadata"],
-            "current_state": conversation_state
-        }
-    except Exception as e:
-        return {
-            "agent": "policy",
-            "error": str(e),
-            "response": f"Error in policy agent: {str(e)}",
-            "confidence": 0.0
-        }
+# @mcp.tool()
+# async def policy_agent(message: str) -> Dict[str, Any]:
+#     """
+#     Policy agent for defining data product policies and governance.
+#     
+#     Args:
+#         message: User message containing policy information
+#         
+#     Returns:
+#         Agent response with reply, confidence, next_action, and metadata
+#     """
+#     try:
+#         if "policy" not in agents:
+#             return {
+#                 "agent": "policy",
+#                 "error": "Agent not initialized - OPENAI_API_KEY required",
+#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+#                 "confidence": 0.0
+#             }
+#         
+#         agent = agents["policy"]
+#         msg = Message("user", message)
+#         result = await agent.handle_async(conversation_state, msg)
+#         
+#         # Update conversation state
+#         conversation_state["history"].append({"role": "user", "content": message})
+#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+#         
+#         # Save session state if we have a current session
+#         if current_session_id:
+#             save_session_state(current_session_id, conversation_state)
+#         
+#         return {
+#             "agent": "policy",
+#             "response": result["reply"],
+#             "confidence": result["confidence"],
+#             "next_action": result["next_action"],
+#             "metadata": result["metadata"],
+#             "current_state": conversation_state
+#         }
+#     except Exception as e:
+#         return {
+#             "agent": "policy",
+#             "error": str(e),
+#             "response": f"Error in policy agent: {str(e)}",
+#             "confidence": 0.0
+#         }
 
-@mcp.tool()
-async def provisioning_agent(message: str) -> Dict[str, Any]:
-    """
-    Provisioning agent for infrastructure and deployment planning.
-    
-    Args:
-        message: User message containing provisioning information
-        
-    Returns:
-        Agent response with reply, confidence, next_action, and metadata
-    """
-    try:
-        if "provisioning" not in agents:
-            return {
-                "agent": "provisioning",
-                "error": "Agent not initialized - OPENAI_API_KEY required",
-                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-                "confidence": 0.0
-            }
-        
-        agent = agents["provisioning"]
-        msg = Message("user", message)
-        result = await agent.handle_async(conversation_state, msg)
-        
-        # Update conversation state
-        conversation_state["history"].append({"role": "user", "content": message})
-        conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-        
-        # Save session state if we have a current session
-        if current_session_id:
-            save_session_state(current_session_id, conversation_state)
-        
-        return {
-            "agent": "provisioning",
-            "response": result["reply"],
-            "confidence": result["confidence"],
-            "next_action": result["next_action"],
-            "metadata": result["metadata"],
-            "current_state": conversation_state
-        }
-    except Exception as e:
-        return {
-            "agent": "provisioning",
-            "error": str(e),
-            "response": f"Error in provisioning agent: {str(e)}",
-            "confidence": 0.0
-        }
+# @mcp.tool()
+# async def provisioning_agent(message: str) -> Dict[str, Any]:
+#     """
+#     Provisioning agent for infrastructure and deployment planning.
+#     
+#     Args:
+#         message: User message containing provisioning information
+#         
+#     Returns:
+#         Agent response with reply, confidence, next_action, and metadata
+#     """
+#     try:
+#         if "provisioning" not in agents:
+#             return {
+#                 "agent": "provisioning",
+#                 "error": "Agent not initialized - OPENAI_API_KEY required",
+#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+#                 "confidence": 0.0
+#             }
+#         
+#         agent = agents["provisioning"]
+#         msg = Message("user", message)
+#         result = await agent.handle_async(conversation_state, msg)
+#         
+#         # Update conversation state
+#         conversation_state["history"].append({"role": "user", "content": message})
+#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+#         
+#         # Save session state if we have a current session
+#         if current_session_id:
+#             save_session_state(current_session_id, conversation_state)
+#         
+#         return {
+#             "agent": "provisioning",
+#             "response": result["reply"],
+#             "confidence": result["confidence"],
+#             "next_action": result["next_action"],
+#             "metadata": result["metadata"],
+#             "current_state": conversation_state
+#         }
+#     except Exception as e:
+#         return {
+#             "agent": "provisioning",
+#             "error": str(e),
+#             "response": f"Error in provisioning agent: {str(e)}",
+#             "confidence": 0.0
+#         }
 
-@mcp.tool()
-async def docs_agent(message: str) -> Dict[str, Any]:
-    """
-    Documentation agent for generating data product documentation.
-    
-    Args:
-        message: User message containing documentation requirements
-        
-    Returns:
-        Agent response with reply, confidence, next_action, and metadata
-    """
-    try:
-        if "docs" not in agents:
-            return {
-                "agent": "docs",
-                "error": "Agent not initialized - OPENAI_API_KEY required",
-                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-                "confidence": 0.0
-            }
-        
-        agent = agents["docs"]
-        msg = Message("user", message)
-        result = await agent.handle_async(conversation_state, msg)
-        
-        # Update conversation state
-        conversation_state["history"].append({"role": "user", "content": message})
-        conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-        
-        # Save session state if we have a current session
-        if current_session_id:
-            save_session_state(current_session_id, conversation_state)
-        
-        return {
-            "agent": "docs",
-            "response": result["reply"],
-            "confidence": result["confidence"],
-            "next_action": result["next_action"],
-            "metadata": result["metadata"],
-            "current_state": conversation_state
-        }
-    except Exception as e:
-        return {
-            "agent": "docs",
-            "error": str(e),
-            "response": f"Error in docs agent: {str(e)}",
-            "confidence": 0.0
-        }
+# @mcp.tool()
+# async def docs_agent(message: str) -> Dict[str, Any]:
+#     """
+#     Documentation agent for generating data product documentation.
+#     
+#     Args:
+#         message: User message containing documentation requirements
+#         
+#     Returns:
+#         Agent response with reply, confidence, next_action, and metadata
+#     """
+#     try:
+#         if "docs" not in agents:
+#             return {
+#                 "agent": "docs",
+#                 "error": "Agent not initialized - OPENAI_API_KEY required",
+#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+#                 "confidence": 0.0
+#             }
+#         
+#         agent = agents["docs"]
+#         msg = Message("user", message)
+#         result = await agent.handle_async(conversation_state, msg)
+#         
+#         # Update conversation state
+#         conversation_state["history"].append({"role": "user", "content": message})
+#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+#         
+#         # Save session state if we have a current session
+#         if current_session_id:
+#             save_session_state(current_session_id, conversation_state)
+#         
+#         return {
+#             "agent": "docs",
+#             "response": result["reply"],
+#             "confidence": result["confidence"],
+#             "next_action": result["next_action"],
+#             "metadata": result["metadata"],
+#             "current_state": conversation_state
+#         }
+#     except Exception as e:
+#         return {
+#             "agent": "docs",
+#             "error": str(e),
+#             "response": f"Error in docs agent: {str(e)}",
+#             "confidence": 0.0
+#         }
 
-@mcp.tool()
-async def catalog_agent(message: str) -> Dict[str, Any]:
-    """
-    Catalog agent for metadata management and cataloging.
-    
-    Args:
-        message: User message containing catalog information
-        
-    Returns:
-        Agent response with reply, confidence, next_action, and metadata
-    """
-    try:
-        if "catalog" not in agents:
-            return {
-                "agent": "catalog",
-                "error": "Agent not initialized - OPENAI_API_KEY required",
-                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-                "confidence": 0.0
-            }
-        
-        agent = agents["catalog"]
-        msg = Message("user", message)
-        result = await agent.handle_async(conversation_state, msg)
-        
-        # Update conversation state
-        conversation_state["history"].append({"role": "user", "content": message})
-        conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-        
-        # Save session state if we have a current session
-        if current_session_id:
-            save_session_state(current_session_id, conversation_state)
-        
-        return {
-            "agent": "catalog",
-            "response": result["reply"],
-            "confidence": result["confidence"],
-            "next_action": result["next_action"],
-            "metadata": result["metadata"],
-            "current_state": conversation_state
-        }
-    except Exception as e:
-        return {
-            "agent": "catalog",
-            "error": str(e),
-            "response": f"Error in catalog agent: {str(e)}",
-            "confidence": 0.0
-        }
+# @mcp.tool()
+# async def catalog_agent(message: str) -> Dict[str, Any]:
+#     """
+#     Catalog agent for metadata management and cataloging.
+#     
+#     Args:
+#         message: User message containing catalog information
+#         
+#     Returns:
+#         Agent response with reply, confidence, next_action, and metadata
+#     """
+#     try:
+#         if "catalog" not in agents:
+#             return {
+#                 "agent": "catalog",
+#                 "error": "Agent not initialized - OPENAI_API_KEY required",
+#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+#                 "confidence": 0.0
+#             }
+#         
+#         agent = agents["catalog"]
+#         msg = Message("user", message)
+#         result = await agent.handle_async(conversation_state, msg)
+#         
+#         # Update conversation state
+#         conversation_state["history"].append({"role": "user", "content": message})
+#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+#         
+#         # Save session state if we have a current session
+#         if current_session_id:
+#             save_session_state(current_session_id, conversation_state)
+#         
+#         return {
+#             "agent": "catalog",
+#             "response": result["reply"],
+#             "confidence": result["confidence"],
+#             "next_action": result["next_action"],
+#             "metadata": result["metadata"],
+#             "current_state": conversation_state
+#         }
+#     except Exception as e:
+#         return {
+#             "agent": "catalog",
+#             "error": str(e),
+#             "response": f"Error in catalog agent: {str(e)}",
+#             "confidence": 0.0
+#         }
 
-@mcp.tool()
-async def observability_agent(message: str) -> Dict[str, Any]:
-    """
-    Observability agent for monitoring and alerting setup.
-    
-    Args:
-        message: User message containing observability requirements
-        
-    Returns:
-        Agent response with reply, confidence, next_action, and metadata
-    """
-    try:
-        if "observability" not in agents:
-            return {
-                "agent": "observability",
-                "error": "Agent not initialized - OPENAI_API_KEY required",
-                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
-                "confidence": 0.0
-            }
-        
-        agent = agents["observability"]
-        msg = Message("user", message)
-        result = await agent.handle_async(conversation_state, msg)
-        
-        # Update conversation state
-        conversation_state["history"].append({"role": "user", "content": message})
-        conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
-        
-        # Save session state if we have a current session
-        if current_session_id:
-            save_session_state(current_session_id, conversation_state)
-        
-        return {
-            "agent": "observability",
-            "response": result["reply"],
-            "confidence": result["confidence"],
-            "next_action": result["next_action"],
-            "metadata": result["metadata"],
-            "current_state": conversation_state
-        }
-    except Exception as e:
-        return {
-            "agent": "observability",
-            "error": str(e),
-            "response": f"Error in observability agent: {str(e)}",
-            "confidence": 0.0
-        }
+# @mcp.tool()
+# async def observability_agent(message: str) -> Dict[str, Any]:
+#     """
+#     Observability agent for monitoring and alerting setup.
+#     
+#     Args:
+#         message: User message containing observability requirements
+#         
+#     Returns:
+#         Agent response with reply, confidence, next_action, and metadata
+#     """
+#     try:
+#         if "observability" not in agents:
+#             return {
+#                 "agent": "observability",
+#                 "error": "Agent not initialized - OPENAI_API_KEY required",
+#                 "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+#                 "confidence": 0.0
+#             }
+#         
+#         agent = agents["observability"]
+#         msg = Message("user", message)
+#         result = await agent.handle_async(conversation_state, msg)
+#         
+#         # Update conversation state
+#         conversation_state["history"].append({"role": "user", "content": message})
+#         conversation_state["history"].append({"role": "assistant", "content": result["reply"]})
+#         
+#         # Save session state if we have a current session
+#         if current_session_id:
+#             save_session_state(current_session_id, conversation_state)
+#         
+#         return {
+#             "agent": "observability",
+#             "response": result["reply"],
+#             "confidence": result["confidence"],
+#             "next_action": result["next_action"],
+#             "metadata": result["metadata"],
+#             "current_state": conversation_state
+#         }
+#     except Exception as e:
+#         return {
+#             "agent": "observability",
+#             "error": str(e),
+#             "response": f"Error in observability agent: {str(e)}",
+#             "confidence": 0.0
+#         }
 
 @mcp.tool()
 def get_conversation_state() -> Dict[str, Any]:
@@ -584,10 +586,12 @@ def reset_conversation() -> Dict[str, Any]:
         "current_session": current_session_id
     }
 
+
+
 @mcp.tool()
-async def route_message(message: str) -> Dict[str, Any]:
+async def intelligent_route_message(message: str) -> Dict[str, Any]:
     """
-    Route a message to the most appropriate agent based on content analysis.
+    Use AI to intelligently route a message to the most appropriate agent.
     
     Args:
         message: User message to route
@@ -596,60 +600,40 @@ async def route_message(message: str) -> Dict[str, Any]:
         Agent response from the most appropriate agent
     """
     try:
-        # Simple keyword-based routing for basic agent selection
-        message_lower = message.lower()
+        if "routing" not in agents:
+            return {
+                "agent": "routing",
+                "error": "Routing agent not initialized - OPENAI_API_KEY required",
+                "response": "Please set OPENAI_API_KEY environment variable to use intelligent routing",
+                "confidence": 0.0
+            }
         
-        # Define routing rules with natural language patterns
-        routing_rules = [
-            # Scoping agent - data product basic information
-            (["name", "domain", "owner", "purpose", "upstream", "source", "data source", "input source", "where data comes from"], "scoping"),
-            
-            # Schema contract agent - data structure and fields
-            (["field", "fields", "schema", "output", "type", "column", "data type", "structure", "table", "format"], "schema_contract"),
-            
-            # Policy agent - governance and access control
-            (["sla", "allow", "deny", "mask", "gate", "policy", "policies", "access", "permission", "security", "governance"], "policy"),
-            
-            # Provisioning agent - infrastructure and deployment
-            (["deploy", "infra", "infrastructure", "terraform", "provision", "environment", "kubernetes", "docker", "cloud"], "provisioning"),
-            
-            # Documentation agent - docs and guides
-            (["doc", "documentation", "readme", "guide", "manual", "help", "explain", "describe"], "docs"),
-            
-            # Catalog agent - metadata and cataloging
-            (["catalog", "metadata", "lineage", "dictionary", "glossary", "discovery", "search"], "catalog"),
-            
-            # Observability agent - monitoring and alerting
-            (["monitor", "alert", "observability", "slo", "sla", "metrics", "dashboard", "tracking", "watch"], "observability")
-        ]
+        # Use the routing agent to make the routing decision
+        routing_agent = agents["routing"]
+        msg = Message("user", message)
         
-        # Find matching agent based on natural language patterns
-        selected_agent = "scoping"  # default
-        best_match_score = 0
+        # Get routing decision from the routing agent
+        routing_result = await routing_agent.handle_async(conversation_state, msg)
         
-        for patterns, agent_name in routing_rules:
-            score = 0
-            for pattern in patterns:
-                if pattern in message_lower:
-                    score += 1
-            if score > best_match_score:
-                best_match_score = score
-                selected_agent = agent_name
+        selected_agent = routing_result.get("selected_agent", "scoping")
+        reasoning = routing_result.get("reasoning", "Default routing")
+        confidence = routing_result.get("confidence", 0.5)
+        user_intent = routing_result.get("user_intent", "Unknown")
         
-        # Check if agent is available
+        # Check if the selected agent is available
         if selected_agent not in agents:
             return {
                 "agent": selected_agent,
-                "error": "Agent not initialized - OPENAI_API_KEY required",
+                "error": "Selected agent not initialized - OPENAI_API_KEY required",
                 "response": f"Please set OPENAI_API_KEY environment variable to use the {selected_agent} agent",
                 "confidence": 0.0,
-                "routing_reason": f"Message matched patterns for {selected_agent} agent",
+                "routing_reason": f"Routing agent selected {selected_agent}: {reasoning}",
+                "user_intent": user_intent,
                 "current_state": conversation_state
             }
         
-        # Call the selected agent - let the agent handle all the logic
+        # Call the selected agent
         agent = agents[selected_agent]
-        msg = Message("user", message)
         
         # The agent will handle conversation state, context, and all logic
         result = await agent.handle_async(conversation_state, msg)
@@ -668,21 +652,19 @@ async def route_message(message: str) -> Dict[str, Any]:
             "confidence": result["confidence"],
             "next_action": result["next_action"],
             "metadata": result["metadata"],
-            "routing_reason": f"Message routed to {selected_agent} agent (score: {best_match_score})",
+            "routing_reason": f"Routing agent selected {selected_agent}: {reasoning}",
+            "user_intent": user_intent,
+            "routing_confidence": confidence,
             "current_state": conversation_state
         }
+        
     except Exception as e:
         # Preserve conversation state even when there's an error
-        # Add the user message to history even if processing failed
         conversation_state["history"].append({"role": "user", "content": message})
         
-        # Create a helpful error response that maintains context
-        error_response = f"I encountered an issue processing your message: {str(e)}. Let me try to help you continue from where we left off."
-        
-        # Add the error response to history
+        error_response = f"I encountered an issue with intelligent routing: {str(e)}. Let me try to help you continue from where we left off."
         conversation_state["history"].append({"role": "assistant", "content": error_response})
         
-        # Save session state if we have a current session
         if current_session_id:
             save_session_state(current_session_id, conversation_state)
         
@@ -694,6 +676,47 @@ async def route_message(message: str) -> Dict[str, Any]:
             "next_action": "retry",
             "metadata": {"error": str(e), "state_preserved": True},
             "current_state": conversation_state
+        }
+
+@mcp.tool()
+async def routing_agent(message: str) -> Dict[str, Any]:
+    """
+    Routing agent for intelligent message routing decisions.
+    
+    Args:
+        message: User message to analyze for routing
+        
+    Returns:
+        Routing decision with selected agent, reasoning, and confidence
+    """
+    try:
+        if "routing" not in agents:
+            return {
+                "agent": "routing",
+                "error": "Routing agent not initialized - OPENAI_API_KEY required",
+                "response": "Please set OPENAI_API_KEY environment variable to use this agent",
+                "confidence": 0.0
+            }
+        
+        agent = agents["routing"]
+        msg = Message("user", message)
+        result = await agent.handle_async(conversation_state, msg)
+        
+        return {
+            "agent": "routing",
+            "selected_agent": result.get("selected_agent", "scoping"),
+            "reasoning": result.get("reasoning", "Default routing"),
+            "confidence": result.get("confidence", 0.5),
+            "user_intent": result.get("user_intent", "Unknown"),
+            "metadata": result.get("metadata", {}),
+            "current_state": conversation_state
+        }
+    except Exception as e:
+        return {
+            "agent": "routing",
+            "error": str(e),
+            "response": f"Error in routing agent: {str(e)}",
+            "confidence": 0.0
         }
 
 @mcp.tool()
