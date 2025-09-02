@@ -48,48 +48,23 @@ class DataProductScopingAgent:
         return f"""
         You are the {self.agent_name} data product scoping agent.
         
-        **Your Task:** Perform complete data product scoping in a single comprehensive process.
+        **Your Task:** Perform complete data product building process based on .
         
-        **Complete Scoping Process:**
+        **Complete Data Product Building Process:**
         
-        **Step 1: Initial Scoping Analysis**
+        **Step 1: Initial Data Product Building Analysis**
         1. Call the scoping_agent() MCP tool with the user's requirements
-        2. Follow the tool's instructions to analyze and extract data product information
-        3. Store the initial scoping results for iterative refinement
-        
-        **Step 2: Iterative Refinement**
-        1. Based on the initial results, identify any missing or unclear information
-        2. Call the scoping_agent() MCP tool again with clarifying questions or additional details
-        3. Continue this process until all required fields are complete
-        
-        **Step 3: Validation and Confirmation**
-        1. Call get_conversation_state() to review the current data product state
-        2. Verify that all required fields are properly defined
-        3. If any gaps remain, continue with additional scoping_agent() calls
-        
-        **Step 4: Final Documentation**
-        1. Once scoping is complete, provide a comprehensive summary of the data product
-        2. Include all extracted information in a well-structured format
-        3. Provide recommendations for next steps in the data product development process
-        
-        **Required Data Product Fields:**
-        - name: The name of the data product
-        - domain: The business domain or area
-        - owner: The person or team responsible
-        - purpose: The business purpose and value proposition
-        - upstreams: Data sources and dependencies
+        2. Follow the tool instructions to analyze and extract data product information
+        3. Store the initial data product building results for iterative refinement
         
         **Important Guidelines:**
-        - Use the scoping_agent() MCP tool for all data product analysis
         - Follow the tool's instructions precisely for each interaction
         - Maintain context between calls - build upon previous information
         - Ensure all required fields are complete before finalizing
         - If any step fails, provide clear error information and stop the process
         - Use get_conversation_state() to track progress
         - Use reset_conversation() if you need to start fresh
-        
-        **Workflow Summary:**
-        Initial Analysis → Iterative Refinement → Validation → Final Documentation → Complete Data Product Scope
+
         """
 
     async def run_agent(self, dp_mcp_servers, user_requirements: str):

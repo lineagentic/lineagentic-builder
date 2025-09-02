@@ -16,11 +16,6 @@ class Message:
         self.role = role
         self.content = content
 
-class ScopingInput(BaseModel):
-    """Input model for scoping agent."""
-    message: str = Field(description="The user's message")
-    conversation_context: str = Field(description="Current conversation context")
-    current_state: Dict[str, Any] = Field(description="Current conversation state")
 
 class ScopingOutput(BaseModel):
     """Output model for scoping agent."""
@@ -79,8 +74,7 @@ class ScopingAgentStructured:
             logger.error(error_msg)
             raise ValueError(error_msg)
     
-    def get_input_model(self) -> type[ScopingInput]:
-        return ScopingInput
+
     
     def get_output_model(self) -> type[ScopingOutput]:
         return ScopingOutput
@@ -162,11 +156,11 @@ class ScopingAgentStructured:
                 if value:  # Only include non-empty values
                     context_parts.append(f"- {key}: {value}")
         
-        # Add recent conversation history (last 5 exchanges)
+        # Add recent conversation history (last 10 exchanges)
         history = state.get("history", [])
         if history:
             context_parts.append("\nRecent Conversation History:")
-            # Get last 10 messages (5 exchanges)
+            # Get last 10 messages (10 exchanges)
             recent_history = history[-10:] if len(history) > 10 else history
             for msg in recent_history:
                 role = msg.get("role", "unknown")
@@ -184,12 +178,7 @@ class ScopingAgentStructured:
             # Build conversation context
             conversation_context = self._build_conversation_context(state)
             
-            # Create input for the agent
-            input_data = ScopingInput(
-                message=message.content,
-                conversation_context=conversation_context,
-                current_state=state
-            )
+
             
             # Get system prompt
             system_prompt = self.get_system_prompt()
