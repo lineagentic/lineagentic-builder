@@ -1,0 +1,80 @@
+{
+  "session_id": "be51f03a-2f48-4c89-9901-d7b89a53477e",
+  "data_product": {
+    "name": "fo_fo_tt",
+    "domain": "sales",
+    "owner": "ll@gmail.com",
+    "purpose": "to investigate sales last year",
+    "upstreams": [
+      "ff.gg"
+    ]
+  },
+  "history": [
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! To get started, could you please tell me the name of your data product? For example, 'customer_360', 'orders_by_day', or 'marketing_events'."
+    },
+    {
+      "role": "user",
+      "content": "fo_fo_tt"
+    },
+    {
+      "role": "assistant",
+      "content": "What domain does your data product belong to? For example, 'sales', 'finance', 'marketing', or 'operations'."
+    },
+    {
+      "role": "user",
+      "content": "sales"
+    },
+    {
+      "role": "assistant",
+      "content": "Who is the owner of this data product? Please provide an email, team ID, or the name/role of the person. For example, 'mm@gmail.com', 'team:data-engineering', or 'Analytics Platform Team'."
+    },
+    {
+      "role": "user",
+      "content": "ll@gmail.com"
+    },
+    {
+      "role": "assistant",
+      "content": "What is the purpose of this data product? For example, 'to serve customer 360 table for CRM analytics', 'to provide daily sales reports', or 'to feed data into the marketing dashboard'."
+    },
+    {
+      "role": "user",
+      "content": "to investigate sales last year"
+    },
+    {
+      "role": "assistant",
+      "content": "What are the upstream data sources for your data product? For example, 'crm.ff', 'billing.stripe', 'web.events'."
+    },
+    {
+      "role": "user",
+      "content": "ff.gg"
+    },
+    {
+      "role": "assistant",
+      "content": "Scope captured."
+    },
+    {
+      "role": "user",
+      "content": "what is next?"
+    },
+    {
+      "role": "assistant",
+      "content": "Scope captured."
+    },
+    {
+      "role": "user",
+      "content": "what about data contract"
+    },
+    {
+      "role": "assistant",
+      "content": "Scope captured."
+    }
+  ],
+  "created_at": "2025-09-03T08:23:37.672467",
+  "last_updated": "2025-09-03T08:26:57.863890"
+}
