@@ -19,38 +19,57 @@ def comprehensive_analysis_instructions(name: str):
     **CRITICAL: YOU MUST CALL TOOLS IN THIS EXACT SEQUENCE BEFORE RESPONDING.**
     
     **AVAILABLE TOOLS:**
-    1. get_conversation_state() - Get current conversation state
-    2. scoping_agent(user_message) - Process user message and extract information
-    3. data_contract_agent(user_message) - Define data contract
+    1. create_session() - Create a new chat session (ONLY call this if no session exists)
+    2. get_conversation_state(session_id) - Get current conversation state for a session
+    3. scoping_agent(user_message, session_id) - Process user message and extract information
+    4. data_contract_agent(user_message, session_id) - Define data contract
+    5. reset_conversation(session_id) - Reset conversation state for a session
+    6. list_sessions() - List all available sessions
     
     **MANDATORY TOOL CALL SEQUENCE - NO EXCEPTIONS:**
-    1. FIRST: Call get_conversation_state() 
-    2. SECOND: Call scoping_agent(user_message) with the current user message
-    3. THIRD: Use the scoping_agent response to determine what to ask the user next
-    4. ONLY THEN: Respond to the user based on the tool results
+    1. FIRST: Check if you already have a session_id from previous tool calls or memory
+    2. SECOND: If you have a session_id, use it; if not, call create_session() ONCE
+    3. THIRD: Call get_conversation_state(session_id) with the session ID
+    4. FOURTH: Call scoping_agent(user_message, session_id) with the current user message
+    5. FIFTH: Use the scoping_agent response to determine what to ask the user next
+    6. ONLY THEN: Respond to the user based on the tool results
+    
+    **IMPORTANT SESSION RULES:**
+    - NEVER call create_session() if you already have a session_id
+    - ALWAYS use the same session_id for all subsequent tool calls
+    - Store the session_id and reuse it for the entire conversation
+    - Only create a new session if you don't have one stored
+    - The session_id should persist across multiple user messages
+    - If you see "session_id" in any previous tool response, use that ID
     
     **EXAMPLE CORRECT WORKFLOW:**
     User: "I want to create a data product for customer analytics"
     You MUST:
-    1. Call get_conversation_state() 
-    2. Call scoping_agent("I want to create a data product for customer analytics")
-    3. Based on scoping_agent response, ask user for the FIRST missing field only
+    1. Check if you have a session_id from previous interactions
+    2. If no session_id: call create_session() to get a session_id
+    3. Call get_conversation_state(session_id) 
+    4. Call scoping_agent("I want to create a data product for customer analytics", session_id)
+    5. Based on scoping_agent response, ask user for the FIRST missing field only
     
     **FORBIDDEN ACTIONS:**
-    - Responding without calling both tools first
+    - Calling create_session() if you already have a session_id
+    - Creating new sessions unnecessarily
+    - Responding without calling the required tools first
     - Asking for multiple fields at once
     - Making assumptions about what the user wants
     - Skipping the scoping_agent() call
+    - Not using session_id in tool calls
     
-    **REMEMBER: ALWAYS CALL BOTH get_conversation_state() AND scoping_agent() BEFORE RESPONDING.**
+    **REMEMBER: CHECK FOR EXISTING SESSION FIRST, CREATE SESSION ONLY IF NEEDED, THEN REUSE THE SAME SESSION_ID FOR THE ENTIRE CONVERSATION.**
     """
 
 class DPBuilderAgent:
-    def __init__(self, agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", get_model_func=None):
+    def __init__(self, agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", get_model_func=None, session_id: str = None):
         self.agent_name = agent_name
         self.user_message = user_message
         self.model_name = model_name
         self.get_model_func = get_model_func
+        self.session_id = session_id
         
     async def create_agent(self, dp_mcp_servers) -> 'Agent':
         # Use the passed get_model_func or fall back to the centralized one
@@ -73,6 +92,13 @@ class DPBuilderAgent:
             tool_use_behavior='run_llm_again',  # Allow agent to continue after tool calls
             reset_tool_choice=False,  # Don't reset tool choice
         )
+        
+        # Store session_id in agent's memory for persistence across runs
+        if self.session_id:
+            agent.memory["session_id"] = self.session_id
+            logger.info(f"Agent created with existing session_id: {self.session_id}")
+        else:
+            logger.info("Agent created without session_id - will create new session on first run")
         
         # Debug: Log what tools the agent has access to
         logger.info(f"Agent created: {agent.name}")
@@ -116,6 +142,16 @@ class DPBuilderAgent:
                 # Run the agent - the conversation state is maintained in dp_server.py
                 result = await Runner.run(comprehensive_agent, user_message, max_turns=60)
                 
+                # Extract session_id from result if it's a new session
+                if isinstance(result.final_output, dict):
+                    # Check if the agent created a new session
+                    if "session_id" in result.final_output:
+                        self.session_id = result.final_output["session_id"]
+                        logger.info(f"New session created: {self.session_id}")
+                    elif "extracted_data" in result.final_output and "session_id" in result.final_output["extracted_data"]:
+                        self.session_id = result.final_output["extracted_data"]["session_id"]
+                        logger.info(f"Session ID extracted: {self.session_id}")
+                
                 # Return the result
                 return dump_json_record(self.agent_name, result.final_output)
                 
@@ -124,7 +160,9 @@ class DPBuilderAgent:
             return {"error": f"Agent execution failed: {str(e)}"}
 
     async def run_agent(self, dp_mcp_servers, user_message: str):
-        """Run the agent with proper orchestration between scoping and data contract phases."""
+        """
+        Run the agent with proper orchestration between scoping and data contract phases.
+        """
         try:
             comprehensive_agent = await self.create_agent(dp_mcp_servers)
             
@@ -152,7 +190,6 @@ class DPBuilderAgent:
             return {"error": f"Agent execution failed: {str(e)}"}
             
 
-
     async def run_with_trace(self, user_message: str):
         trace_name = f"{self.agent_name}-dp-builder-agent"
         trace_id = f"{self.agent_name.lower()}-{hash(user_message) % 10000}"
@@ -175,14 +212,30 @@ class DPBuilderAgent:
             logger.error(f"Error running {self.agent_name}: {e}")
             return {"error": str(e)}
       
-
+    def get_session_id(self) -> str:
+        """Get the current session ID."""
+        return self.session_id
+    
+    def set_session_id(self, session_id: str):
+        """Set the session ID."""
+        self.session_id = session_id
+    
+    def has_active_session(self) -> bool:
+        """Check if the agent has an active session."""
+        return self.session_id is not None
+    
+    def get_session_status(self) -> dict:
+        """Get comprehensive session status information."""
+        return {
+            "has_session": self.has_active_session(),
+            "session_id": self.session_id,
+            "agent_name": self.agent_name
+        }
 
 # Factory function
-def create_dp_builder_agent(agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", get_model_func=None) -> DPBuilderAgent:
+def create_dp_builder_agent(agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", get_model_func=None, session_id: str = None) -> DPBuilderAgent:
     """Factory function to create a DPBuilderAgent instance"""
-    return DPBuilderAgent(agent_name=agent_name, user_message=user_message, model_name=model_name, get_model_func=get_model_func)
-
-
+    return DPBuilderAgent(agent_name=agent_name, user_message=user_message, model_name=model_name, get_model_func=get_model_func, session_id=session_id)
 
 if __name__ == "__main__":
     # Example usage
