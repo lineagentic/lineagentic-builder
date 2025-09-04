@@ -7,8 +7,12 @@ from typing import Dict, Any, Optional
 from contextlib import AsyncExitStack
 from agents import Agent, Tool, Runner, trace
 from agents.mcp.server import MCPServerStdio
-from mcp_params import dp_builder_mcp_server_params
-from file_utils import dump_json_record
+from dp_server.mcp_params import dp_builder_mcp_server_params
+from dp_server.session_utils import save_conversation_state
+from dp_server.session_utils import load_conversation_state
+from dp_server.session_utils import create_new_session
+from dp_server.file_utils import dump_json_record
+from dp_server.model_manager import get_model
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -16,72 +20,43 @@ def comprehensive_analysis_instructions(name: str):
     return f"""
     You are the {name} data product builder agent.
     
-    **CRITICAL: YOU MUST CALL TOOLS IN THIS EXACT SEQUENCE BEFORE RESPONDING.**
+    **CRITICAL: YOU MUST CALL TOOLS Depend on user message and conversation state*
+    
+    **MESSAGE FORMAT:**
+    You will receive a formatted string containing:
+    - User Message: [the actual user message]
+    - Conversation State: [the current conversation state as a dictionary]
     
     **AVAILABLE TOOLS:**
-    1. create_session() - Create a new chat session (ONLY call this if no session exists)
-    2. get_conversation_state(session_id) - Get current conversation state for a session
-    3. scoping_agent(user_message, session_id) - Process user message and extract information
-    4. data_contract_agent(user_message, session_id) - Define data contract
-    5. reset_conversation(session_id) - Reset conversation state for a session
-    6. list_sessions() - List all available sessions
-    
-    **MANDATORY TOOL CALL SEQUENCE - NO EXCEPTIONS:**
-    1. FIRST: Check if you already have a session_id from previous tool calls or memory
-    2. SECOND: If you have a session_id, use it; if not, call create_session() ONCE
-    3. THIRD: Call get_conversation_state(session_id) with the session ID
-    4. FOURTH: Call scoping_agent(user_message, session_id) with the current user message
-    5. FIFTH: Use the scoping_agent response to determine what to ask the user next
-    6. ONLY THEN: Respond to the user based on the tool results
-    
-    **IMPORTANT SESSION RULES:**
-    - NEVER call create_session() if you already have a session_id
-    - ALWAYS use the same session_id for all subsequent tool calls
-    - Store the session_id and reuse it for the entire conversation
-    - Only create a new session if you don't have one stored
-    - The session_id should persist across multiple user messages
-    - If you see "session_id" in any previous tool response, use that ID
-    
-    **EXAMPLE CORRECT WORKFLOW:**
-    User: "I want to create a data product for customer analytics"
-    You MUST:
-    1. Check if you have a session_id from previous interactions
-    2. If no session_id: call create_session() to get a session_id
-    3. Call get_conversation_state(session_id) 
-    4. Call scoping_agent("I want to create a data product for customer analytics", session_id)
-    5. Based on scoping_agent response, ask user for the FIRST missing field only
-    
+    1. scoping_agent(messages) - Process user message and extract information (pass the entire formatted string)
+    2. data_contract_agent(messages) - Define data contract (pass the entire formatted string)
+
+    **MANDATORY TOOL CALL DEPENDING ON USER MESSAGE AND CONVERSATION STATE - NO EXCEPTIONS:**
+    1. Call scoping_agent(messages) with the entire formatted input string
+    2. Use the scoping_agent response to determine what to ask the user next
+    3. After scoping_agent responds that it is complete, call data_contract_agent(messages) with the entire formatted input string
+    4. Continue calling data_contract_agent until it responds that it is complete
+
     **FORBIDDEN ACTIONS:**
-    - Calling create_session() if you already have a session_id
-    - Creating new sessions unnecessarily
     - Responding without calling the required tools first
     - Asking for multiple fields at once
     - Making assumptions about what the user wants
     - Skipping the scoping_agent() call
-    - Not using session_id in tool calls
     
-    **REMEMBER: CHECK FOR EXISTING SESSION FIRST, CREATE SESSION ONLY IF NEEDED, THEN REUSE THE SAME SESSION_ID FOR THE ENTIRE CONVERSATION.**
     """
-
+      
 class DPBuilderAgent:
-    def __init__(self, agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", get_model_func=None, session_id: str = None):
+    def __init__(self, agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", session_id: str = None):
         self.agent_name = agent_name
         self.user_message = user_message
         self.model_name = model_name
-        self.get_model_func = get_model_func
         self.session_id = session_id
+
         
     async def create_agent(self, dp_mcp_servers) -> 'Agent':
-        # Use the passed get_model_func or fall back to the centralized one
-        if self.get_model_func:
-            model = self.get_model_func(self.model_name)
-        else:
-            from model_manager import get_model
-            model = get_model(self.model_name)
-            
-        # Debug: Log the MCP servers being passed to the agent
-        logger.info(f"Creating agent with {len(dp_mcp_servers)} MCP servers")
-        logger.info(f"MCP servers types: {[type(server) for server in dp_mcp_servers]}")
+
+        
+        model = get_model(self.model_name)
         
         # Create agent with comprehensive instructions
         agent = Agent(
@@ -92,34 +67,13 @@ class DPBuilderAgent:
             tool_use_behavior='run_llm_again',  # Allow agent to continue after tool calls
             reset_tool_choice=False,  # Don't reset tool choice
         )
-        
-        # Store session_id in agent's memory for persistence across runs
-        if self.session_id:
-            agent.memory["session_id"] = self.session_id
-            logger.info(f"Agent created with existing session_id: {self.session_id}")
-        else:
-            logger.info("Agent created without session_id - will create new session on first run")
-        
-        # Debug: Log what tools the agent has access to
-        logger.info(f"Agent created: {agent.name}")
-        logger.info(f"Agent instructions length: {len(comprehensive_analysis_instructions(self.agent_name))}")
-        
-        # Debug: Check what tools the agent has access to
-        try:
-            mcp_tools = await agent.get_mcp_tools()
-            logger.info(f"Agent MCP tools: {[tool.name for tool in mcp_tools]}")
-        except Exception as e:
-            logger.warning(f"Could not get MCP tools: {e}")
-        
+       
         return agent
 
     async def run_with_session(self, user_message: str):
         """Run the agent while maintaining conversation state through the MCP server."""
         try:
             # Use the working MCP server approach from the original code
-            from agents.mcp.server import MCPServerStdio
-            from contextlib import AsyncExitStack
-            
             async with AsyncExitStack() as stack:
                 dp_mcp_servers = [
                     await stack.enter_async_context(
@@ -134,72 +88,89 @@ class DPBuilderAgent:
                     logger.info(f"MCP Server {i}: {type(server)}")
                 
                 # Create agent with the MCP servers
-                comprehensive_agent = await self.create_agent(dp_mcp_servers)
+                dp_builder_agent = await self.create_agent(dp_mcp_servers)
                 
                 # Debug: Check what tools the agent has access to
-                logger.info(f"Agent created successfully: {comprehensive_agent.name}")
+                logger.info(f"Agent created successfully: {dp_builder_agent.name}")
                 
-                # Run the agent - the conversation state is maintained in dp_server.py
-                result = await Runner.run(comprehensive_agent, user_message, max_turns=60)
+                # Load or create conversation state
+                if self.session_id:
+                    conversation_state = load_conversation_state(self.session_id)
+                else:
+                    self.session_id = create_new_session()
+                    conversation_state = load_conversation_state(self.session_id)
                 
+                # Run the agent - pass both user_message and conversation_state as a formatted string
+                messages_string = f"""
+                User Message: {user_message}
+                
+                Conversation State: {conversation_state}
+                """
+                result = await Runner.run(dp_builder_agent, messages_string, max_turns=60)  
                 # Extract session_id from result if it's a new session
-                if isinstance(result.final_output, dict):
-                    # Check if the agent created a new session
-                    if "session_id" in result.final_output:
-                        self.session_id = result.final_output["session_id"]
-                        logger.info(f"New session created: {self.session_id}")
-                    elif "extracted_data" in result.final_output and "session_id" in result.final_output["extracted_data"]:
-                        self.session_id = result.final_output["extracted_data"]["session_id"]
-                        logger.info(f"Session ID extracted: {self.session_id}")
                 
+                # Debug: Check what attributes RunResult has
+                logger.info(f"RunResult type: {type(result)}")
+                logger.info(f"RunResult attributes: {dir(result)}")
+                logger.info(f"Result final_output: {result.final_output}")
+                
+                # Try to access other possible attributes
+                if hasattr(result, 'reply'):
+                    logger.info(f"Result reply: {result.reply}")
+                if hasattr(result, 'extracted_data'):
+                    logger.info(f"Result extracted_data: {result.extracted_data}")
+                if hasattr(result, 'output'):
+                    logger.info(f"Result output: {result.output}")
+                # Update conversation state with new information
+                # Check if RunResult has extracted_data attribute
+                if hasattr(result, 'extracted_data') and result.extracted_data:
+                    data_product = conversation_state.get("data_product", {})
+                    logging.info(f"Updating conversation state with extracted data: {result.extracted_data}")
+                    for key, value in result.extracted_data.items():
+                        if value:
+                            data_product[key] = value
+                    conversation_state["data_product"] = data_product
+                    logging.info(f"Updated conversation state: {conversation_state}")
+                    # Save the updated state to file
+                    save_conversation_state(conversation_state, self.session_id)
+                else:
+                    logging.info(f"No extracted data in result: {result}")
+
+                # Update history
+                conversation_state["history"].append({"role": "user", "content": user_message})
+                
+                # Get the reply from RunResult - try different possible attributes
+                reply_content = ""
+                if hasattr(result, 'reply'):
+                    reply_content = result.reply
+                elif hasattr(result, 'final_output'):
+                    reply_content = str(result.final_output)
+                else:
+                    reply_content = "No response available"
+                
+                conversation_state["history"].append({"role": "assistant", "content": reply_content})
+                save_conversation_state(conversation_state, self.session_id)
+
                 # Return the result
                 return dump_json_record(self.agent_name, result.final_output)
                 
         except Exception as e:
             logger.error(f"Error in run_with_session: {e}")
             return {"error": f"Agent execution failed: {str(e)}"}
-
-    async def run_agent(self, dp_mcp_servers, user_message: str):
-        """
-        Run the agent with proper orchestration between scoping and data contract phases.
-        """
-        try:
-            comprehensive_agent = await self.create_agent(dp_mcp_servers)
-            
-            # Debug: Check what tools the agent has access to
-            logger.info(f"Agent created successfully: {comprehensive_agent.name}")
-            
-            # Try to list tools from the MCP server to see what's available
-            try:
-                for i, server in enumerate(dp_mcp_servers):
-                    logger.info(f"Checking MCP Server {i} for tools...")
-                    # This might not work depending on the MCP server implementation
-                    logger.info(f"Server {i} type: {type(server)}")
-            except Exception as e:
-                logger.warning(f"Could not inspect MCP server tools: {e}")
-            
-            # Increase max_turns to handle the two-phase workflow properly
-            # Each phase might need multiple turns to gather all required information
-            result = await Runner.run(comprehensive_agent, user_message, max_turns=60)
-            
-            # Return the result
-            return dump_json_record(self.agent_name, result.final_output)
-            
-        except Exception as e:
-            logger.error(f"Error in run_agent: {e}")
-            return {"error": f"Agent execution failed: {str(e)}"}
             
 
     async def run_with_trace(self, user_message: str):
-        trace_name = f"{self.agent_name}-dp-builder-agent"
+        trace_name = f"{self.agent_name}-agent"
         trace_id = f"{self.agent_name.lower()}-{hash(user_message) % 10000}"
         
         # Simple tracing - you can enhance this
         logger.info(f"Starting trace: {trace_name} with ID: {trace_id}")
         try:
             return await self.run_with_session(user_message)
-        finally:
-            logger.info(f"Completed trace: {trace_name}")
+        except Exception as e:
+            logger.error(f"Error in run_with_trace: {e}")
+            return {"error": f"Agent execution failed: {str(e)}"}
+
 
     async def run(self, current_message: str = None):
         try:
@@ -212,30 +183,12 @@ class DPBuilderAgent:
             logger.error(f"Error running {self.agent_name}: {e}")
             return {"error": str(e)}
       
-    def get_session_id(self) -> str:
-        """Get the current session ID."""
-        return self.session_id
-    
-    def set_session_id(self, session_id: str):
-        """Set the session ID."""
-        self.session_id = session_id
-    
-    def has_active_session(self) -> bool:
-        """Check if the agent has an active session."""
-        return self.session_id is not None
-    
-    def get_session_status(self) -> dict:
-        """Get comprehensive session status information."""
-        return {
-            "has_session": self.has_active_session(),
-            "session_id": self.session_id,
-            "agent_name": self.agent_name
-        }
+
 
 # Factory function
-def create_dp_builder_agent(agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", get_model_func=None, session_id: str = None) -> DPBuilderAgent:
+def create_dp_builder_agent(agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", session_id: str = None) -> DPBuilderAgent:
     """Factory function to create a DPBuilderAgent instance"""
-    return DPBuilderAgent(agent_name=agent_name, user_message=user_message, model_name=model_name, get_model_func=get_model_func, session_id=session_id)
+    return DPBuilderAgent(agent_name=agent_name, user_message=user_message, model_name=model_name, session_id=session_id)
 
 if __name__ == "__main__":
     # Example usage

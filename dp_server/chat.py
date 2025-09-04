@@ -16,7 +16,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from dp_server.dp_builder_agent import create_dp_builder_agent
+from dp_builder_agent import create_dp_builder_agent
 import logging
 
 # Configure logging
