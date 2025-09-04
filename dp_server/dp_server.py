@@ -77,8 +77,15 @@ async def scoping_agent(messages: str) -> Dict[str, Any]:
     message = Message("user", user_message)
     result = await agent.handle_async(conversation_state, message)
 
-        
-    return result
+            
+    return {
+        "reply": result["reply"],
+        "confidence": result["confidence"],
+        "next_action": result["next_action"],
+        "metadata": result["metadata"],
+        "extracted_data": result["extracted_data"],
+        "missing_fields": result["missing_fields"]
+    }
         
 
 
@@ -118,7 +125,14 @@ async def data_contract_agent(messages: str) -> Dict[str, Any]:
     result = await agent.handle_async(conversation_state, message)
 
         
-    return result
+    return {
+        "reply": result["reply"],
+        "confidence": result["confidence"],
+        "next_action": result["next_action"],
+        "metadata": result["metadata"],
+        "extracted_data": result["extracted_data"],
+        "missing_fields": result["missing_fields"]
+    }
         
 
 

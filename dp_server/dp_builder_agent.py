@@ -125,50 +125,41 @@ class DPBuilderAgent:
                 result = await Runner.run(dp_builder_agent, messages_string, max_turns=60)  
                 # Extract session_id from result if it's a new session
                 
-                # Debug: Check what attributes RunResult has
-                logger.info(f"RunResult type: {type(result)}")
-                logger.info(f"RunResult attributes: {dir(result)}")
-                logger.info(f"Result final_output: {result.final_output}")
+                # Get the final output from the result
+                final_output = result.final_output if hasattr(result, 'final_output') else str(result)
                 
-                # Try to access other possible attributes
-                if hasattr(result, 'reply'):
-                    logger.info(f"Result reply: {result.reply}")
-                if hasattr(result, 'extracted_data'):
-                    logger.info(f"Result extracted_data: {result.extracted_data}")
-                if hasattr(result, 'output'):
-                    logger.info(f"Result output: {result.output}")
-                # Update conversation state with new information
-                # Check if RunResult has extracted_data attribute
-                if hasattr(result, 'extracted_data') and result.extracted_data:
+                # Extract reply and extracted_data from final_output
+                reply = str(final_output)  # Default to string representation
+                extracted_data = {}
+                
+                # Check if final_output is a dict and contains the expected fields
+                if isinstance(final_output, dict):
+                    reply = final_output.get("reply", str(final_output))
+                    extracted_data = final_output.get("extracted_data", {})
+                elif hasattr(final_output, 'reply'):
+                    reply = final_output.reply
+                    extracted_data = getattr(final_output, 'extracted_data', {})
+                
+                conversation_state["history"].append({"role": "user", "content": user_message})
+                conversation_state["history"].append({"role": "assistant", "content": reply})
+                
+                # Handle extracted data if present
+                if extracted_data:
                     data_product = conversation_state.get("data_product", {})
-                    logging.info(f"Updating conversation state with extracted data: {result.extracted_data}")
-                    for key, value in result.extracted_data.items():
+                    logging.info(f"Updating conversation state with extracted data: {extracted_data}")
+                    for key, value in extracted_data.items():
                         if value:
                             data_product[key] = value
                     conversation_state["data_product"] = data_product
                     logging.info(f"Updated conversation state: {conversation_state}")
-                    # Save the updated state to file
-                    save_conversation_state(conversation_state, self.session_id)
                 else:
-                    logging.info(f"No extracted data in result: {result}")
+                    logging.info(f"No extracted data in result: {final_output}")               
 
-                # Update history
-                conversation_state["history"].append({"role": "user", "content": user_message})
                 
-                # Get the reply from RunResult - try different possible attributes
-                reply_content = ""
-                if hasattr(result, 'reply'):
-                    reply_content = result.reply
-                elif hasattr(result, 'final_output'):
-                    reply_content = str(result.final_output)
-                else:
-                    reply_content = "No response available"
-                
-                conversation_state["history"].append({"role": "assistant", "content": reply_content})
                 save_conversation_state(conversation_state, self.session_id)
 
                 # Return the result
-                return dump_json_record(self.agent_name, result.final_output)
+                return dump_json_record(self.agent_name, final_output)
                 
         except Exception as e:
             logger.error(f"Error in run_with_session: {e}")

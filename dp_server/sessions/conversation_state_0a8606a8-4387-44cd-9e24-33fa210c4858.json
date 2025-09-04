@@ -1,0 +1,16 @@
+{
+  "session_id": "0a8606a8-4387-44cd-9e24-33fa210c4858",
+  "data_product": {},
+  "history": [
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "What is the name of the data product? For example, customer_360, orders_by_day, or marketing_events."
+    }
+  ],
+  "created_at": "2025-09-04T20:56:02.886668",
+  "last_updated": "2025-09-04T20:56:02.886668"
+}
