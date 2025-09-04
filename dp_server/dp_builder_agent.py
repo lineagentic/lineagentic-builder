@@ -3,6 +3,7 @@ DP Builder Agent that uses dp_server.py as MCP server for comprehensive data pro
 """
 import logging
 import asyncio
+import os
 from typing import Dict, Any, Optional
 from contextlib import AsyncExitStack
 from agents import Agent, Tool, Runner, trace
@@ -54,12 +55,25 @@ def comprehensive_analysis_instructions(name: str):
     - Once scoping is complete, move to data_contract_agent for detailed field definitions
     - Each tool call should advance the conversation to the next logical step
 
+    **IMPORTANT - TOOL OUTPUT PRESERVATION:**
+    When you call a tool, the tool will return structured data including:
+    - reply: The response message
+    - extracted_data: Any data extracted from the user input
+    - confidence: Confidence level
+    - next_action: Suggested next action
+    - metadata: Additional metadata
+    - missing_fields: List of missing required fields
+    
+    **YOU MUST PRESERVE THIS STRUCTURED DATA IN YOUR FINAL RESPONSE.**
+    After calling a tool, respond with the tool's reply message, but also ensure that any extracted_data, confidence, next_action, metadata, and missing_fields from the tool are preserved and accessible.
+
     **FORBIDDEN ACTIONS:**
     - Calling the same tool multiple times for the same user input
     - Responding without calling the appropriate tool first
     - Asking for multiple fields at once
     - Making assumptions about what the user wants
     - Skipping required tool calls
+    - Losing the structured data from tool outputs
     
     """
       
@@ -130,19 +144,132 @@ class DPBuilderAgent:
                 # Get the final output from the result
                 final_output = result.final_output if hasattr(result, 'final_output') else str(result)
                 
+                # Debug: Log the result object to understand its structure
+                logging.info(f"Result object type: {type(result)}")
+                logging.info(f"Result object attributes: {[attr for attr in dir(result) if not attr.startswith('_')]}")
+                
+                # Try to access tool results if available
+                tool_results = None
+                if hasattr(result, 'tool_results'):
+                    tool_results = result.tool_results
+                    logging.info(f"Tool results found: {tool_results}")
+                elif hasattr(result, 'messages'):
+                    # Check if messages contain tool calls and results
+                    messages = result.messages
+                    logging.info(f"Messages found: {len(messages) if messages else 0}")
+                    if messages:
+                        for i, msg in enumerate(messages):
+                            logging.info(f"Message {i}: {type(msg)} - {str(msg)[:100]}...")
+                
                 # Extract reply and extracted_data from final_output
                 reply = str(final_output)  # Default to string representation
                 extracted_data = {}
+                confidence = 0.0
+                next_action = None
+                metadata = {}
+                missing_fields = []
+                
                 logging.info(f"Final output------------------: {str(final_output)}")
+                
                 # Check if final_output is a dict and contains the expected fields
                 if isinstance(final_output, dict):
                     reply = final_output.get("reply", str(final_output))
                     extracted_data = final_output.get("extracted_data", {})
+                    confidence = final_output.get("confidence", 0.0)
+                    next_action = final_output.get("next_action")
+                    metadata = final_output.get("metadata", {})
+                    missing_fields = final_output.get("missing_fields", [])
                     logging.info(f"extracted_data------------------: {str(extracted_data)}")
                 elif hasattr(final_output, 'reply'):
                     reply = final_output.reply
                     extracted_data = getattr(final_output, 'extracted_data', {})
+                    confidence = getattr(final_output, 'confidence', 0.0)
+                    next_action = getattr(final_output, 'next_action', None)
+                    metadata = getattr(final_output, 'metadata', {})
+                    missing_fields = getattr(final_output, 'missing_fields', [])
                     logging.info(f"extracted_data------------------: {str(extracted_data)}")
+                else:
+                    # Use OpenAI structured output to parse the agent response
+                    logging.info("Using OpenAI structured output to parse agent response...")
+                    
+                    try:
+                        from openai import OpenAI
+                        from pydantic import BaseModel, Field
+                        from typing import Dict, Any, List, Optional
+                        
+                        # Define the structured output model
+                        class AgentResponseParser(BaseModel):
+                            reply: Optional[str] = Field(default=None, description="The clean response message without structured data")
+                            clean_reply_message: Optional[str] = Field(default=None, description="Alternative field name for clean reply")
+                            extracted_data: Dict[str, Any] = Field(default_factory=dict, description="Any data extracted from the user input")
+                            confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Confidence level of the response")
+                            next_action: Optional[str] = Field(default=None, description="Suggested next action")
+                            metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+                            missing_fields: List[str] = Field(default_factory=list, description="List of missing required fields")
+                            
+                            def get_reply(self) -> str:
+                                """Get the reply from either field"""
+                                return self.reply or self.clean_reply_message or ""
+                        
+                        # Get OpenAI client
+                        openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                        
+                        # Parse the agent response using structured output
+                        parse_prompt = f"""
+                        Parse the following agent response and extract the structured information.
+                        
+                        Agent Response:
+                        {str(final_output)}
+                        
+                        Return a JSON object with these exact fields:
+                        - "reply": The clean response message (remove any structured data sections)
+                        - "extracted_data": Object with any extracted data (like {{"name": "value"}})
+                        - "confidence": Number between 0 and 1
+                        - "next_action": String describing next action
+                        - "metadata": Object with additional metadata
+                        - "missing_fields": Array of missing field names
+                        
+                        Look for patterns like:
+                        - "I have noted that the name of your data product is 'X'" -> extract name
+                        - "Confidence: 0.95" -> extract confidence
+                        - "Missing required fields: - field1 - field2" -> extract missing fields
+                        - "Domain", "Owner", "Purpose" mentioned -> these are likely missing fields
+                        """
+                        
+                        response = openai_client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[
+                                {"role": "system", "content": "You are a parser that extracts structured data from agent responses. Return only valid JSON."},
+                                {"role": "user", "content": parse_prompt}
+                            ],
+                            response_format={"type": "json_object"},
+                            temperature=0.1
+                        )
+                        
+                        # Parse the structured response
+                        parsed_data = AgentResponseParser.model_validate_json(response.choices[0].message.content)
+                        
+                        # Update variables with parsed data
+                        reply = parsed_data.get_reply()
+                        extracted_data = parsed_data.extracted_data
+                        confidence = parsed_data.confidence
+                        next_action = parsed_data.next_action
+                        metadata = parsed_data.metadata
+                        missing_fields = parsed_data.missing_fields
+                        
+                        logging.info(f"Successfully parsed with OpenAI structured output:")
+                        logging.info(f"  Reply: {reply[:100]}...")
+                        logging.info(f"  Extracted data: {extracted_data}")
+                        logging.info(f"  Confidence: {confidence}")
+                        logging.info(f"  Next action: {next_action}")
+                        logging.info(f"  Missing fields: {missing_fields}")
+                        
+                    except Exception as e:
+                        logging.warning(f"Failed to parse with OpenAI structured output: {e}")
+                        # Fallback to simple string extraction
+                        reply = str(final_output)
+                        logging.info(f"Using fallback: reply = final_output")
+                
                 conversation_state["history"].append({"role": "user", "content": user_message})
                 conversation_state["history"].append({"role": "assistant", "content": reply})
                 
@@ -161,8 +288,18 @@ class DPBuilderAgent:
                 
                 save_conversation_state(conversation_state, self.session_id)
 
-                # Return the result
-                return dump_json_record(self.agent_name, final_output)
+                # Return the result with all parsed structured data
+                return_result = {
+                    "final_output": final_output,
+                    "reply": reply,
+                    "tool_results": tool_results,
+                    "extracted_data": extracted_data,
+                    "confidence": confidence,
+                    "next_action": next_action,
+                    "metadata": metadata,
+                    "missing_fields": missing_fields
+                }
+                return dump_json_record(self.agent_name, return_result)
                 
         except Exception as e:
             logger.error(f"Error in run_with_session: {e}")

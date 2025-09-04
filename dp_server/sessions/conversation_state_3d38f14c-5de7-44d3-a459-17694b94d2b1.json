@@ -1,0 +1,24 @@
+{
+  "session_id": "3d38f14c-5de7-44d3-a459-17694b94d2b1",
+  "data_product": {},
+  "history": [
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! What's the name of your data product? For example, 'customer_360', 'orders_by_day', or 'marketing_events'. \n\nCurrently, I need the following information to proceed:\n- Name of the data product\n- Domain\n- Owner\n- Purpose"
+    },
+    {
+      "role": "user",
+      "content": "gh_454"
+    },
+    {
+      "role": "assistant",
+      "content": "I have noted that the name of your data product is \"gh_454\". \n\nNow, could you please tell me what domain this data product belongs to? For example, is it for sales, finance, marketing, or operations? \n\nAdditionally, here\u2019s a quick recap of the information I still need:\n- Domain\n- Owner\n- Purpose"
+    }
+  ],
+  "created_at": "2025-09-04T21:18:16.554303",
+  "last_updated": "2025-09-04T21:18:37.946846"
+}
