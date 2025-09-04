@@ -19,8 +19,16 @@ sys.path.insert(0, str(project_root))
 from dp_server.dp_builder_agent import create_dp_builder_agent
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging with both console and file output
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+        logging.FileHandler('dp_builder.log')  # File output
+    ],
+    force=True  # Override any existing configuration
+)
 logger = logging.getLogger(__name__)
 
 class ChatInterface:

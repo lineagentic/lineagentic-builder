@@ -15,14 +15,16 @@ from dp_server.file_utils import dump_json_record
 from dp_server.model_manager import get_model
 
 # Configure logging with console output
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),  # This ensures output goes to console
-        logging.FileHandler('dp_builder.log')  # Optional: also log to file
-    ]
-)
+# Only configure if not already configured
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),  # This ensures output goes to console
+            logging.FileHandler('dp_builder.log')  # Optional: also log to file
+        ]
+    )
 logger = logging.getLogger(__name__)
 
 def comprehensive_analysis_instructions(name: str):
@@ -131,15 +133,16 @@ class DPBuilderAgent:
                 # Extract reply and extracted_data from final_output
                 reply = str(final_output)  # Default to string representation
                 extracted_data = {}
-                
+                logging.info(f"Final output------------------: {str(final_output)}")
                 # Check if final_output is a dict and contains the expected fields
                 if isinstance(final_output, dict):
                     reply = final_output.get("reply", str(final_output))
                     extracted_data = final_output.get("extracted_data", {})
+                    logging.info(f"extracted_data------------------: {str(extracted_data)}")
                 elif hasattr(final_output, 'reply'):
                     reply = final_output.reply
                     extracted_data = getattr(final_output, 'extracted_data', {})
-                
+                    logging.info(f"extracted_data------------------: {str(extracted_data)}")
                 conversation_state["history"].append({"role": "user", "content": user_message})
                 conversation_state["history"].append({"role": "assistant", "content": reply})
                 
