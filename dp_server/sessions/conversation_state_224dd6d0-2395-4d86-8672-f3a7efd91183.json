@@ -1,0 +1,40 @@
+{
+  "session_id": "224dd6d0-2395-4d86-8672-f3a7efd91183",
+  "data_product": {},
+  "history": [
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! What's the name of your data product? For example, 'customer_360', 'orders_by_day', or 'marketing_events'."
+    },
+    {
+      "role": "user",
+      "content": "ccd_rr"
+    },
+    {
+      "role": "assistant",
+      "content": "The name of your data product has been noted as \"ccd_rr\". \n\nWhat is the domain of the data product? Examples include sales, finance, marketing, or operations."
+    },
+    {
+      "role": "user",
+      "content": "sales"
+    },
+    {
+      "role": "assistant",
+      "content": "Could you clarify if 'sales' is the domain of your data product? Also, could you provide the name of your data product? For example, 'customer_360', 'orders_by_day', or 'marketing_events'."
+    },
+    {
+      "role": "user",
+      "content": "ss_44"
+    },
+    {
+      "role": "assistant",
+      "content": "The name of your data product has been noted as \"ss_44\". \n\nCould you please confirm the domain of this data product? Examples include sales, finance, marketing, or operations."
+    }
+  ],
+  "created_at": "2025-09-04T20:30:23.936832",
+  "last_updated": "2025-09-04T20:31:31.269198"
+}

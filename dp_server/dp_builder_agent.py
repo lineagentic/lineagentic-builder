@@ -13,14 +13,23 @@ from dp_server.session_utils import load_conversation_state
 from dp_server.session_utils import create_new_session
 from dp_server.file_utils import dump_json_record
 from dp_server.model_manager import get_model
-logging.basicConfig(level=logging.INFO)
+
+# Configure logging with console output
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # This ensures output goes to console
+        logging.FileHandler('dp_builder.log')  # Optional: also log to file
+    ]
+)
 logger = logging.getLogger(__name__)
 
 def comprehensive_analysis_instructions(name: str):
     return f"""
     You are the {name} data product builder agent.
     
-    **CRITICAL: YOU MUST CALL TOOLS Depend on user message and conversation state*
+    **CRITICAL: CALL TOOLS ONLY ONCE PER USER MESSAGE - NO REDUNDANT CALLS**
     
     **MESSAGE FORMAT:**
     You will receive a formatted string containing:
@@ -31,17 +40,24 @@ def comprehensive_analysis_instructions(name: str):
     1. scoping_agent(messages) - Process user message and extract information (pass the entire formatted string)
     2. data_contract_agent(messages) - Define data contract (pass the entire formatted string)
 
-    **MANDATORY TOOL CALL DEPENDING ON USER MESSAGE AND CONVERSATION STATE - NO EXCEPTIONS:**
-    1. Call scoping_agent(messages) with the entire formatted input string
-    2. Use the scoping_agent response to determine what to ask the user next
-    3. After scoping_agent responds that it is complete, call data_contract_agent(messages) with the entire formatted input string
-    4. Continue calling data_contract_agent until it responds that it is complete
+    **TOOL CALL STRATEGY - CALL EACH TOOL ONLY ONCE PER USER MESSAGE:**
+    1. **FIRST**: Check conversation state to see what stage we're in
+    2. **IF SCOPING INCOMPLETE**: Call scoping_agent(messages) ONCE with the entire formatted input string
+    3. **IF SCOPING COMPLETE**: Call data_contract_agent(messages) ONCE with the entire formatted input string
+    4. **NEVER**: Call the same tool multiple times for the same user message
+    5. **RESPOND**: Based on the tool response, ask the user for the next required information
+
+    **CONVERSATION FLOW:**
+    - Start with scoping_agent to gather basic information (name, purpose, etc.)
+    - Once scoping is complete, move to data_contract_agent for detailed field definitions
+    - Each tool call should advance the conversation to the next logical step
 
     **FORBIDDEN ACTIONS:**
-    - Responding without calling the required tools first
+    - Calling the same tool multiple times for the same user input
+    - Responding without calling the appropriate tool first
     - Asking for multiple fields at once
     - Making assumptions about what the user wants
-    - Skipping the scoping_agent() call
+    - Skipping required tool calls
     
     """
       

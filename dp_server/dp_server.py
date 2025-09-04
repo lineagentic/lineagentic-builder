@@ -6,10 +6,19 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-# Configure logging to suppress verbose output
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger('mcp').setLevel(logging.WARNING)
-logging.getLogger('mcp.server').setLevel(logging.WARNING)
+# Configure logging to show INFO level and above in console
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # This ensures output goes to console
+        logging.FileHandler('dp_server.log')  # Optional: also log to file
+    ]
+)
+
+# Set MCP loggers to INFO level so we can see what's happening
+logging.getLogger('mcp').setLevel(logging.INFO)
+logging.getLogger('mcp.server').setLevel(logging.INFO)
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
