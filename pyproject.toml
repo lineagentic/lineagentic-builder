@@ -1,14 +1,14 @@
 [project]
-name = "lineagentic-builder"
+name = "lineagentic-composer"
 version = "1.0.2"
-description = "Lineagentic-builder is agentic ai chat basedapproach for building data data products."
+description = "Lineagentic-composer is agentic ai chat baseda pproach for composing data data products."
 readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
 authors = [
-    {name = "Lineagentic Builder Team", email = "team@lineagentic.com"}
+    {name = "Lineagentic Composer Team", email = "team@lineagentic.com"}
 ]
-keywords = ["data-product", "ai-agents", "data-processing", "data-product-building"]
+keywords = ["data-product", "ai-agents", "data-product-composing"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -68,10 +68,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lineagentic/lineagentic-builder"
-Documentation = "https://lineagentic-builder.readthedocs.io"
-Repository = "https://github.com/lineagentic/lineagentic-builder"
-Issues = "https://github.com/lineagentic/lineagentic-builder/issues"
+Homepage = "https://github.com/lineagentic/lineagentic-composer"
+Documentation = "https://lineagentic-composer.readthedocs.io"
+Repository = "https://github.com/lineagentic/lineagentic-composer"
+Issues = "https://github.com/lineagentic/lineagentic-composer/issues"
 
 
 
@@ -83,9 +83,9 @@ requires = ["setuptools>=78.1.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["builder_agents*", "cli*"]
+include = ["composer_agents*", "cli*"]
 
 [tool.setuptools.package-data]
-"builder_agents" = [ "*.md"]
+"composer_agents" = [ "*.md"]
 "cli" = ["*.md"]
 
