@@ -53,6 +53,7 @@ def comprehensive_analysis_instructions(name: str):
     - Start with scoping_agent to gather basic information (name, purpose, etc.)
     - Once scoping is complete, move to data_contract_agent for detailed field definitions
     - Each tool call should advance the conversation to the next logical step
+    - ** IMPORTANT: Always guide the user to provide the next required information with clear examples.
 
     **IMPORTANT - TOOL OUTPUT PRESERVATION:**
     When you call a tool, the tool will return structured data including:

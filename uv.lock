@@ -1749,7 +1749,7 @@ wheels = [
 ]
 
 [[package]]
-name = "lineagentic-builder"
+name = "lineagentic-composer"
 version = "1.0.2"
 source = { editable = "." }
 dependencies = [

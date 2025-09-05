@@ -4,11 +4,13 @@
 .PHONY: help clean-all test test-verbose test-module gradio-deploy start-demo-server stop-demo-server build-package publish-pypi publish-testpypi create-venv run-chat
 
 help:
-	@echo "Lineagentic-Flow Project"
+	@echo "Lineagentic-Composer Project"
 	@echo ""
 	@echo "Available commands:"
 	@echo "  - create-venv: Create virtual environment and install dependencies"
-	@echo "  - run-chat: Create virtual environment and run chat.py"
+	@echo "  - run-chat: Create virtual environment and run chat.py (CLI interface)"
+	@echo "  - start-demo-server: Start Gradio web interface (gradio_chat.py)"
+	@echo "  - stop-demo-server: Stop the Gradio web interface"
 	@echo "  - start-all-services: Start all services"
 	@echo "  - stop-all-services: Stop all services"
 	@echo "  - stop-all-services-and-clean-data: Stop all services and clean data"
@@ -60,13 +62,13 @@ run-chat:
 
 # Start demo server
 start-demo-server:
-	@echo "🚀 Running python demo/gradio_chat_app.py with virtual environment activated..."
+	@echo "🚀 Running python gradio_chat.py with virtual environment activated..."
 	@$(MAKE) create-venv
-	@if pgrep -f "python.*gradio_chat_app.py" > /dev/null; then \
+	@if pgrep -f "python.*gradio_chat.py" > /dev/null; then \
 		echo "  Demo server is already running!"; \
 		echo "   Use 'make stop-demo-server' to stop it first"; \
 	else \
-		. .venv/bin/activate && python demo/gradio_chat_app.py > /dev/null 2>&1 & \
+		. .venv/bin/activate && python gradio_chat.py > /dev/null 2>&1 & \
 		echo " Demo server starting in background..."; \
 		echo " Waiting for server to be ready..."; \
 		while ! curl -s http://localhost:7860 > /dev/null 2>&1; do \
@@ -80,7 +82,7 @@ start-demo-server:
 # Stop demo server
 stop-demo-server:
 	@echo " Stopping demo server..."
-	@pkill -f "python.*gradio_chat_app.py" || echo "No demo server process found"
+	@pkill -f "python.*gradio_chat.py" || echo "No demo server process found"
 	@lsof -ti:7860 | xargs kill -9 2>/dev/null || echo "No process on port 7860"
 	@echo " Demo server stopped"
 
