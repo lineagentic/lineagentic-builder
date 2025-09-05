@@ -45,13 +45,39 @@ The tools that current version of Lineagentic-DPC MCP server provides are:
 
 
 
+
+
 ## Quick Start
 
-You can use MCP server either by normal way ot you can use a statefull agent with a MCP server which is developed on top of the MCP server. To run the chat either you can use gradio which have interface or you can run in command line chat by following command:
+You can use MCP server either by normal way ot you can use a state-full agent with a MCP server which is developed on top of the MCP server. 
+
+
+set your environment variable: 
+```
+OPENAI_API_KEY
+```
+Two example of uses of MCP server provided here so you can either simply run command line chat or gradio app, you can see structure in following:
 
 ```bash
 make run-chat
 ```
+
+```
+├── chat/
+│   └── chat.py          # ← Moved here with updated imports
+├── demo/
+│   ├── demo_server.py
+│   ├── deploy_setup.py
+│   ├── requirements-deploy.txt
+│   └── start_demo_server.py
+├── dp_chat_agent/
+├── dp_composer_server/
+├── Makefile             # ← Updated with new paths
+└── ... (other files)
+```
+
+
+
 
 ## MCP Server Configuration
 
@@ -64,7 +90,7 @@ To run the `dp_composer_server`, you need to configure it as an MCP server in yo
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/ali.shamsaddinlou/Documents/codes/lineagentic-dpc/dp_composer_server",
+        "<your-directory>/lineagentic-dpc/dp_composer_server",
         "run",
         "-m"
         "dp_composer-server"
