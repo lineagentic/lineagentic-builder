@@ -1,12 +1,14 @@
 # LineAgent Project Makefile
 # Centralized build and development commands
 
-.PHONY: help clean-all test test-verbose test-module gradio-deploy start-demo-server stop-demo-server build-package publish-pypi publish-testpypi
+.PHONY: help clean-all test test-verbose test-module gradio-deploy start-demo-server stop-demo-server build-package publish-pypi publish-testpypi create-venv run-chat
 
 help:
 	@echo "Lineagentic-Flow Project"
 	@echo ""
 	@echo "Available commands:"
+	@echo "  - create-venv: Create virtual environment and install dependencies"
+	@echo "  - run-chat: Create virtual environment and run chat.py"
 	@echo "  - start-all-services: Start all services"
 	@echo "  - stop-all-services: Stop all services"
 	@echo "  - stop-all-services-and-clean-data: Stop all services and clean data"
@@ -44,6 +46,13 @@ create-venv:
 		exit 1; \
 	fi
 	@echo " Virtual environment created successfully!"
+
+# Run chat.py in virtual environment
+run-chat:
+	@echo "🚀 Starting chat application in virtual environment..."
+	@$(MAKE) create-venv
+	@echo "💬 Launching chat interface..."
+	@. .venv/bin/activate && python chat.py
 
 # =============================================================================
 # DEMO SERVER
@@ -116,6 +125,8 @@ clean-all:
 	@rm -rf .ruff_cache 2>/dev/null || echo "No .ruff_cache folder found"
 	@rm -rf dist 2>/dev/null || echo "No dist folder found"
 	@rm -rf logs 2>/dev/null || echo "No logs folder found"
+	@find . -name "*.log" -type f -delete 2>/dev/null || echo "No .log files found"
+	@find . -name "*.json" -type f -delete 2>/dev/null || echo "No .json files found"
 	@$(MAKE) clean-pycache
 	@rm -rf venv 2>/dev/null || echo "No venv folder found"
 	@echo " Cleanup completed!"

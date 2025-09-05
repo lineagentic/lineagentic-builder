@@ -26,8 +26,8 @@ sys.path.insert(0, str(project_root))
 
 from mcp.server.fastmcp import FastMCP
 from typing import Dict, Any
-from dp_agents.datacontract_agent.data_contract_agent import DataContractAgentStructured, Message
-from dp_agents.scoping_agent.scoping_agent import ScopingAgentStructured
+from dp_composer_server.datacontract_agent.data_contract_agent import DataContractAgentStructured, Message
+from dp_composer_server.scoping_agent.scoping_agent import ScopingAgentStructured
 from openai import OpenAI
 import os
 

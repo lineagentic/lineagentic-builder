@@ -16,7 +16,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from dp_server.dp_builder_agent import create_dp_builder_agent
+from dp_chat_agent.chat_agent import create_dp_composer_agent
 import logging
 
 # Configure logging with both console and file output
@@ -38,13 +38,13 @@ class ChatInterface:
         self.running = True
         
     async def initialize_agent(self, initial_message: str = None):
-        """Initialize the DPBuilderAgent with a new session"""
+        """Initialize the DPComposerAgent with a new session"""
         try:
-            logger.info("Initializing Data Product Builder Agent...")
+            logger.info("Initializing Data Product Composer Agent...")
             
             # Create agent instance - it will handle session creation internally
-            self.agent = create_dp_builder_agent(
-                agent_name="Data Product Builder",
+            self.agent = create_dp_composer_agent(
+                agent_name="Data Product Composer",
                 user_message=initial_message or "Hello, I'm ready to help you build a data product!",
                 model_name="gpt-4o-mini"
             )
@@ -89,7 +89,7 @@ class ChatInterface:
     def print_welcome(self):
         """Print welcome message and instructions"""
         print("\n" + "="*60)
-        print("🤖 Data Product Builder Chat")
+        print("🤖 Data Product Composer Chat")
         print("="*60)
         print("Welcome! I'm here to help you build comprehensive data products.")
         print("\nI can help you with:")

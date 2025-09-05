@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-STATE_DIR = Path(__file__).parent / "sessions"
+STATE_DIR = Path(__file__).parent.parent / "sessions"
 
 # Ensure sessions directory exists
 STATE_DIR.mkdir(exist_ok=True)

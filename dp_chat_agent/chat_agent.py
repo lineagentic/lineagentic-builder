@@ -8,13 +8,11 @@ from typing import Dict, Any, Optional
 from contextlib import AsyncExitStack
 from agents import Agent, Runner
 from agents.mcp.server import MCPServerStdio
-from dp_server.mcp_params import dp_builder_mcp_server_params
-from dp_server.session_utils import save_conversation_state
-from dp_server.session_utils import load_conversation_state
-from dp_server.session_utils import create_new_session
-from dp_server.file_utils import dump_json_record
-from dp_server.model_manager import get_model
-from dp_server.response_parser import ResponseParser
+from dp_composer_server.mcp_params import dp_composer_mcp_server_params
+from dp_chat_agent.utils.session_utils import save_conversation_state, load_conversation_state, create_new_session
+from dp_chat_agent.utils.file_utils import dump_json_record
+from dp_chat_agent.utils.model_manager import get_model
+from dp_chat_agent.utils.response_parser import ResponseParser
 
 # Configure logging with console output
 # Only configure if not already configured
@@ -112,11 +110,11 @@ class DPBuilderAgent:
                     await stack.enter_async_context(
                         MCPServerStdio(params, client_session_timeout_seconds=120)
                     )
-                    for params in dp_builder_mcp_server_params
+                    for params in dp_composer_mcp_server_params
                 ]
                 
                 # Create agent with the MCP servers
-                dp_builder_agent = await self.create_agent(dp_mcp_servers)
+                dp_composer_agent = await self.create_agent(dp_mcp_servers)
                 
                 # Load or create conversation state
                 if self.session_id:
@@ -131,15 +129,15 @@ class DPBuilderAgent:
                 
                 Conversation State: {conversation_state}
                 """
-                result = await Runner.run(dp_builder_agent, messages_string, max_turns=60)  
+                result = await Runner.run(dp_composer_agent, messages_string, max_turns=60)  
                 
                 # Get the final output from the result
                 final_output = result.final_output if hasattr(result, 'final_output') else str(result)
+                logging.info(f"final_output------------------: {str(final_output)}")
                 
                 # Parse the agent response using the ResponseParser
                 parser = ResponseParser(model_name="gpt-4o-mini")
                 parsed_data = parser.parse_agent_response(str(final_output))
-                logging.info(f"parsed_data------------------: {str(parsed_data)}")
                 # Extract parsed data
                 reply = parsed_data.get_reply()
                 extracted_data = parsed_data.extracted_data
@@ -193,14 +191,14 @@ class DPBuilderAgent:
 
 
 # Factory function
-def create_dp_builder_agent(agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", session_id: str = None) -> DPBuilderAgent:
+def create_dp_composer_agent(agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", session_id: str = None) -> DPBuilderAgent:
     """Factory function to create a DPBuilderAgent instance"""
     return DPBuilderAgent(agent_name=agent_name, user_message=user_message, model_name=model_name, session_id=session_id)
 
 if __name__ == "__main__":
     # Example usage
     async def main():
-        agent = create_dp_builder_agent("test_agent", "Hello, I want to create a data product for customer analytics")
+        agent = create_dp_composer_agent("test_agent", "Hello, I want to create a data product for customer analytics")
         result = await agent.run()
         print(result)
     
