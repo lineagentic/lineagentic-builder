@@ -48,7 +48,7 @@ class GradioChatInterface:
             self.agent = create_dp_composer_agent(
                 agent_name="Data Product Composer",
                 user_message=initial_message or "Hello, I'm ready to help you build a data product!",
-                model_name="gpt-4o-mini"
+                model_name="gpt-4-turbo-preview"
             )
             
             # Get the session ID that was created
@@ -77,7 +77,25 @@ class GradioChatInterface:
                 if "error" in result:
                     return f"Error: {result['error']}"
                 elif "reply" in result:
-                    return result["reply"]
+                    # Get the main reply
+                    response = result["reply"]
+                    
+                    # Add additional context if available
+                    if result.get("missing_fields"):
+                        missing_fields = result["missing_fields"]
+                        if missing_fields:
+                            response += f"\n\n📋 **Still need:** {', '.join(missing_fields)}"
+                    
+                    if result.get("next_action"):
+                        next_action = result["next_action"]
+                        if next_action:
+                            response += f"\n\n🎯 **Next:** {next_action}"
+                    
+                    if result.get("confidence") and result["confidence"] < 0.8:
+                        confidence = result["confidence"]
+                        response += f"\n\n⚠️ **Confidence:** {confidence:.1%} (Please provide more details if needed)"
+                    
+                    return response
                 else:
                     return str(result)
             else:
@@ -145,22 +163,24 @@ def create_gradio_interface():
     }
     """
     
-    with gr.Blocks(css=css, title="Data Product Composer Chat") as interface:
+    with gr.Blocks(css=css, title="Lineagentic-DPC: Data Product Composer - Governance Shift left framework") as interface:
         gr.Markdown("""
-        # 🤖 Data Product Composer Chat
+        # Lineagentic-DPC: Data Product Composer - Governance Shift left framework
         
-        Welcome! I'm here to help you build comprehensive data products.
+        Welcome! I'm here to help you build comprehensive data products with structured guidance.
                 
         **Instructions:**
         • Type your message in the chat box below
+        • I'll guide you through scoping and data contract creation
         • Use the "Clear Chat" button to start a new session
+        • Look for progress indicators and next steps in my responses
         """)
         
         with gr.Row():
             with gr.Column(scale=3):
                 # Chat interface
                 chatbot = gr.Chatbot(
-                    label="Chat with Data Product Composer",
+                    label="Chat with Lineagentic-DPC: Data Product Composer - Governance Shift left framework",
                     height=500,
                     show_label=True,
                     container=True,
@@ -184,8 +204,9 @@ def create_gradio_interface():
                 gr.Markdown("""
                 ### 💡 Tips
                 - Be specific about your data product requirements
-                - Ask about data contracts, field definitions, or validation rules
-                - The agent will guide you through the complete data product creation process
+                - I'll show you what information is still needed
+                - Follow the suggested next steps for best results
+                - The process includes scoping and data contract creation
                 """)
         
         # Event handlers

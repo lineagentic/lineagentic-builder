@@ -89,7 +89,7 @@ class ChatInterface:
     def print_welcome(self):
         """Print welcome message and instructions"""
         print("\n" + "="*60)
-        print("🤖 Data Product Composer Chat")
+        print("Lineagentic-DPC: Data Product Composer")
         print("="*60)
         print("Welcome! I'm here to help you build comprehensive data products.")
         print("\nI can help you with:")

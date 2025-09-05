@@ -38,47 +38,22 @@ def comprehensive_analysis_instructions(name: str):
     - User Message: [the actual user message]
     - Conversation State: [the current conversation state as a dictionary]
     
-    **CONVERSATION STATE STRUCTURE:**
-    The conversation state contains:
-    - session_id: Unique session identifier
-    - data_product: Dictionary with captured fields (name, domain, purpose, etc.)
-    - history: List of previous messages
-    - created_at: Session creation timestamp
-    - last_updated: Last update timestamp
-    
-    **SCOPING COMPLETION CRITERIA:**
-    Scoping is considered COMPLETE when data_product contains:
-    - name: Data product name (required)
-    - domain: Business domain (required) 
-    - purpose: Business purpose/objective (required)
-    - stakeholders: Key stakeholders (required)
-    - success_metrics: How success will be measured (required)
-    
-    **DATA CONTRACT COMPLETION CRITERIA:**
-    Data contract is considered COMPLETE when data_product contains:
-    - All scoping fields (above)
-    - data_sources: List of data sources
-    - fields: Detailed field definitions with types, descriptions, constraints
-    - data_quality_rules: Quality requirements
-    - privacy_requirements: Data privacy and security requirements
-    
     **AVAILABLE TOOLS:**
-    1. scoping_agent(messages) - Process user message and extract scoping information
-    2. data_contract_agent(messages) - Define detailed data contract and field specifications
-    
+    1. scoping_agent(messages) - Process user message and extract information (pass the entire formatted string)
+    2. data_contract_agent(messages) - Define data contract (pass the entire formatted string)
+
     **TOOL CALL STRATEGY - CALL EACH TOOL ONLY ONCE PER USER MESSAGE:**
-    1. **FIRST**: Analyze the conversation state's data_product dictionary to determine completion status
+    1. **FIRST**: Check conversation state to see what stage we're in
     2. **IF SCOPING INCOMPLETE**: Call scoping_agent(messages) ONCE with the entire formatted input string
-    3. **IF SCOPING COMPLETE BUT DATA CONTRACT INCOMPLETE**: Call data_contract_agent(messages) ONCE with the entire formatted input string
-    4. **IF BOTH COMPLETE**: Provide summary and ask if user wants to modify anything
-    5. **NEVER**: Call the same tool multiple times for the same user message
-    6. **RESPOND**: Based on the tool response, ask the user for the next required information
-    
+    3. **IF SCOPING COMPLETE**: Call data_contract_agent(messages) ONCE with the entire formatted input string
+    4. **NEVER**: Call the same tool multiple times for the same user message
+    5. **RESPOND**: Based on the tool response, ask the user for the next required information
+
     **CONVERSATION FLOW:**
-    - Start with scoping_agent to gather basic information (name, purpose, domain, stakeholders, success_metrics)
+    - Start with scoping_agent to gather basic information (name, purpose, etc.)
     - Once scoping is complete, move to data_contract_agent for detailed field definitions
     - Each tool call should advance the conversation to the next logical step
-    
+
     **IMPORTANT - TOOL OUTPUT PRESERVATION:**
     When you call a tool, the tool will return structured data including:
     - reply: The response message
@@ -98,8 +73,9 @@ def comprehensive_analysis_instructions(name: str):
     - Making assumptions about what the user wants
     - Skipping required tool calls
     - Losing the structured data from tool outputs
-    - Asking for information that's already captured in the conversation state
+    
     """
+      
       
 class DPBuilderAgent:
     def __init__(self, agent_name: str, user_message: str, model_name: str = "gpt-4o-mini", session_id: str = None):
@@ -161,7 +137,7 @@ class DPBuilderAgent:
                 logging.info(f"final_output------------------: {str(final_output)}")
                 
                 # Parse the agent response using the ResponseParser
-                parser = ResponseParser(model_name="gpt-4o-mini")
+                parser = ResponseParser(model_name="gpt-4-turbo-preview")
                 parsed_data = parser.parse_agent_response(str(final_output))
                 # Extract parsed data
                 reply = parsed_data.get_reply()

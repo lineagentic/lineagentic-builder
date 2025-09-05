@@ -51,9 +51,9 @@ create-venv:
 
 # Run chat.py in virtual environment
 run-chat:
-	@echo "🚀 Starting chat application in virtual environment..."
+	@echo "Starting chat application in virtual environment..."
 	@$(MAKE) create-venv
-	@echo "💬 Launching chat interface..."
+	@echo "Launching chat interface..."
 	@. .venv/bin/activate && python chat.py
 
 # =============================================================================
@@ -62,7 +62,7 @@ run-chat:
 
 # Start demo server
 start-demo-server:
-	@echo "🚀 Running python gradio_chat.py with virtual environment activated..."
+	@echo "Running python gradio_chat.py with virtual environment activated..."
 	@$(MAKE) create-venv
 	@if pgrep -f "python.*gradio_chat.py" > /dev/null; then \
 		echo "  Demo server is already running!"; \
@@ -75,7 +75,7 @@ start-demo-server:
 			echo "   Waiting for server to start..."; \
 			sleep 2; \
 		done; \
-		echo "✅ Server is now running and available at http://localhost:7860"; \
+		echo " Server is now running and available at http://localhost:7860"; \
 		echo " Use 'make stop-demo-server' to stop the demo server"; \
 	fi
 
@@ -120,7 +120,7 @@ clean-all:
 	@rm -rf demo-deploy 2>/dev/null || echo "No demo-deploy folder found"
 	@rm -rf lineagentic_flow.egg-info 2>/dev/null || echo "No lineagentic_flow.egg-info folder found"
 	@rm -rf demo-venv 2>/dev/null || echo "No demo-venv folder found"
-	@rm -rf lineagentic_builder.egg-info 2>/dev/null || echo "No lineagentic_builder.egg-info folder found"
+	@rm -rf lineagentic_composer.egg-info 2>/dev/null || echo "No lineagentic_composer.egg-info folder found"
 	@rm -rf .pytest_cache 2>/dev/null || echo "No .pytest_cache folder found"
 	@rm -rf .mypy_cache 2>/dev/null || echo "No .mypy_cache folder found"
 	@rm -rf logs 2>/dev/null || echo "No logs folder found"
