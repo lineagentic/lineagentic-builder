@@ -163,10 +163,11 @@ def create_gradio_interface():
     }
     """
     
-    with gr.Blocks(css=css, title="Lineagentic-DPC: Data Product Composer - Governance Shift left framework") as interface:
+    with gr.Blocks(css=css, title="Lineagentic-DPC: Data Product Composer - Build Data Products with governance shift left in practice") as interface:
         gr.Markdown("""
-        # Lineagentic-DPC: Data Product Composer - Governance Shift left framework
-        
+        # Lineagentic-DPC: Data Product Composer
+        # Build Data Products with governance shift left in practice
+
         Welcome! I'm here to help you build comprehensive data products with structured guidance.
                 
         **Instructions:**

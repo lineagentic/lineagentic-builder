@@ -127,6 +127,7 @@ clean-all:
 	@rm -rf .ruff_cache 2>/dev/null || echo "No .ruff_cache folder found"
 	@rm -rf dist 2>/dev/null || echo "No dist folder found"
 	@rm -rf logs 2>/dev/null || echo "No logs folder found"
+	@rm -rf demo-deploy 2>/dev/null || echo "No demo-deploy folder found"
 	@find . -name "*.log" -type f -delete 2>/dev/null || echo "No .log files found"
 	@find . -name "*.json" -type f -delete 2>/dev/null || echo "No .json files found"
 	@$(MAKE) clean-pycache
@@ -140,7 +141,7 @@ clean-all:
 
 # Deploy to Hugging Face Spaces using Gradio
 gradio-deploy:
-	@echo "🚀 Preparing Gradio deployment..."
+	@echo "🚀 Preparing Lineagentic-DPC Gradio deployment..."
 	@sleep 2
 	@echo "📁 Creating demo-deploy directory..."
 	@rm -rf demo-deploy
@@ -152,15 +153,13 @@ gradio-deploy:
 	@cp demo/requirements-deploy.txt demo-deploy/requirements.txt
 	@echo "📁 Copying package files for local installation..."
 	@cp pyproject.toml demo-deploy/
-	@cp README.md demo-deploy/
-	@cp MANIFEST.in demo-deploy/
-	@cp LICENSE demo-deploy/
-	@cp -r lf_algorithm demo-deploy/
-	@cp -r cli demo-deploy/
+	@echo "📁 Copying Lineagentic-DPC project files..."
+	@cp -r dp_chat_agent demo-deploy/
+	@cp -r dp_composer_server demo-deploy/
 	@echo "✅ Files copied to demo-deploy/"
 	@echo "🌐 Deploying with Gradio..."
 	@cd demo-deploy && gradio deploy --app-file start_demo_server.py
-	@echo "✅ Gradio deployment completed!"
+	@echo "✅ Lineagentic-DPC Gradio deployment completed!"
 
 
 # =============================================================================
