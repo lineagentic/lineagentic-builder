@@ -1,6 +1,8 @@
 # Lineagentic-DPC
 
-Lineagentic-DPC is an MCP server concentrating on composing step of building data products. It solves challenges metadata shift left governance in data mesh.
+Lineagentic-DPC is an MCP server designed for building data products. It does not provision data products directly, but instead supports their composition—covering aspects such as defining ownership, establishing data contracts, and enforcing policies. It enables users to create data products with a well-defined set of governance rules.
+
+In short, it facilitates the development of data products within a data mesh architecture and promotes metadata-driven, “shift-left” governance—ensuring that clear governance steps are considered early in the data product lifecycle.
 
 ## Status
 
