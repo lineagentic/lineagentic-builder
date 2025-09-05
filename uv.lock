@@ -1749,8 +1749,8 @@ wheels = [
 ]
 
 [[package]]
-name = "lineagentic-composer"
-version = "1.0.2"
+name = "lineagentic-dpc"
+version = "0.6.2"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },

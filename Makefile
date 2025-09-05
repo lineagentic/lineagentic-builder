@@ -124,6 +124,8 @@ clean-all:
 	@rm -rf .pytest_cache 2>/dev/null || echo "No .pytest_cache folder found"
 	@rm -rf .mypy_cache 2>/dev/null || echo "No .mypy_cache folder found"
 	@rm -rf logs 2>/dev/null || echo "No logs folder found"
+	@rm -f lineagentic_dpc.egg-info 2>/dev/null || echo "No lineagentic_dpc.egg-info folder found"
+	@rm -rf dp_composer_server.egg-info 2>/dev/null || echo "No dp_composer_server.egg-info folder found"
 	@rm -rf .ruff_cache 2>/dev/null || echo "No .ruff_cache folder found"
 	@rm -rf dist 2>/dev/null || echo "No dist folder found"
 	@rm -rf logs 2>/dev/null || echo "No logs folder found"
